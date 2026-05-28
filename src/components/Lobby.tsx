@@ -75,23 +75,23 @@ function IdleLobby({ onEnter }: { onEnter: (code: string) => void }) {
   const canJoin = normalized.length >= 3;
 
   return (
-    <div className="w-full max-w-sm rounded-2xl border border-slate-800 bg-slate-900/40 p-5 flex flex-col gap-4">
-      <h2 className="text-sm font-semibold uppercase tracking-wider text-slate-400">
+    <div className="w-full max-w-sm rounded-2xl border border-line bg-paper-raised/80 p-5 flex flex-col gap-4">
+      <h2 className="text-sm font-semibold uppercase tracking-wider text-ink-muted">
         Lobby
       </h2>
 
       <button
         type="button"
         onClick={() => onEnter(generateRoomCode())}
-        className="w-full rounded-full bg-emerald-500 px-6 py-3 text-base font-semibold text-slate-950 shadow-lg shadow-emerald-500/20 active:scale-95 transition"
+        className="w-full rounded-full bg-go px-6 py-3 text-base font-semibold text-paper shadow-lg shadow-go/20 active:scale-95 transition"
       >
         Create room
       </button>
 
-      <div className="flex items-center gap-2 text-xs text-slate-500">
-        <div className="h-px flex-1 bg-slate-800" />
+      <div className="flex items-center gap-2 text-xs text-ink-faint">
+        <div className="h-px flex-1 bg-line" />
         <span>or</span>
-        <div className="h-px flex-1 bg-slate-800" />
+        <div className="h-px flex-1 bg-line" />
       </div>
 
       <form
@@ -111,12 +111,12 @@ function IdleLobby({ onEnter }: { onEnter: (code: string) => void }) {
           value={joinCode}
           onChange={(e) => setJoinCode(e.target.value)}
           maxLength={8}
-          className="w-full rounded-xl border border-slate-800 bg-slate-950 px-4 py-3 text-center text-lg font-mono tracking-[0.3em] uppercase text-slate-100 placeholder:text-slate-600 focus:outline-none focus:border-slate-600"
+          className="w-full rounded-xl border border-line bg-paper px-4 py-3 text-center text-lg font-mono tracking-[0.3em] uppercase text-ink placeholder:text-ink-faint focus:outline-none focus:border-ink-muted"
         />
         <button
           type="submit"
           disabled={!canJoin}
-          className="w-full rounded-full bg-slate-100 px-6 py-3 text-base font-semibold text-slate-950 active:scale-95 transition disabled:bg-slate-800 disabled:text-slate-500"
+          className="w-full rounded-full bg-ink px-6 py-3 text-base font-semibold text-paper active:scale-95 transition disabled:bg-line disabled:text-ink-faint"
         >
           Join
         </button>
@@ -225,37 +225,37 @@ function Room({ code, onLeave }: { code: string; onLeave: () => void }) {
   }
 
   return (
-    <div className="w-full max-w-sm rounded-2xl border border-slate-800 bg-slate-900/40 p-5 flex flex-col gap-4">
+    <div className="w-full max-w-sm rounded-2xl border border-line bg-paper-raised/80 p-5 flex flex-col gap-4">
       <div className="flex items-baseline justify-between">
-        <h2 className="text-sm font-semibold uppercase tracking-wider text-slate-400">
+        <h2 className="text-sm font-semibold uppercase tracking-wider text-ink-muted">
           Room
         </h2>
         <StatusBadge status={status} />
       </div>
 
-      <div className="text-center font-mono text-4xl tracking-[0.4em] text-slate-100">
+      <div className="text-center font-serif text-4xl tracking-[0.4em] text-ink">
         {code}
       </div>
 
       <div className="flex flex-col items-center gap-3">
-        <div className="rounded-xl bg-white p-3">
-          <QRCodeSVG value={shareUrl} size={140} />
+        <div className="rounded-xl bg-paper-raised p-3">
+          <QRCodeSVG value={shareUrl} size={140} bgColor="#FBF8F1" fgColor="#1F1B16" />
         </div>
         <button
           type="button"
           onClick={copy}
-          className="w-full rounded-full border border-slate-700 bg-slate-950 px-4 py-2 text-sm font-medium text-slate-200 active:scale-95 transition"
+          className="w-full rounded-full border border-line bg-paper px-4 py-2 text-sm font-medium text-ink active:scale-95 transition"
         >
           {copied ? 'Link copied' : 'Copy share link'}
         </button>
       </div>
 
       <div className="flex flex-col gap-2">
-        <div className="text-xs uppercase tracking-wider text-slate-500">
+        <div className="text-xs uppercase tracking-wider text-ink-muted">
           Players · {players.length}
         </div>
         {players.length === 0 ? (
-          <div className="text-sm text-slate-500 italic">
+          <div className="text-sm text-ink-faint italic">
             Waiting for connection…
           </div>
         ) : (
@@ -267,13 +267,13 @@ function Room({ code, onLeave }: { code: string; onLeave: () => void }) {
                   key={p.id}
                   className={`flex items-center gap-2 rounded-lg px-2.5 py-2 text-sm ${
                     isMe
-                      ? 'bg-emerald-500/10 ring-1 ring-emerald-500/40'
-                      : 'bg-slate-950/40'
+                      ? 'bg-go/10 ring-1 ring-go/40'
+                      : 'bg-paper'
                   }`}
                 >
                   <span
                     className={`h-2 w-2 shrink-0 rounded-full ${
-                      p.ready ? 'bg-emerald-400' : 'bg-slate-600'
+                      p.ready ? 'bg-go' : 'bg-ink-faint'
                     }`}
                     title={p.ready ? 'Ready' : 'Not ready'}
                   />
@@ -292,29 +292,29 @@ function Room({ code, onLeave }: { code: string; onLeave: () => void }) {
                         maxLength={24}
                         onChange={(e) => setDraftName(e.target.value)}
                         onBlur={saveName}
-                        className="min-w-0 flex-1 rounded-md border border-slate-700 bg-slate-950 px-2 py-1 text-sm text-slate-100 focus:outline-none focus:border-emerald-500"
+                        className="min-w-0 flex-1 rounded-md border border-line bg-paper px-2 py-1 text-sm text-ink focus:outline-none focus:border-go"
                       />
                       <button
                         type="submit"
-                        className="shrink-0 rounded-md bg-emerald-500 px-2 py-1 text-xs font-semibold text-slate-950"
+                        className="shrink-0 rounded-md bg-go px-2 py-1 text-xs font-semibold text-paper"
                       >
                         Save
                       </button>
                     </form>
                   ) : (
                     <>
-                      <span className="flex-1 truncate text-slate-200">
+                      <span className="flex-1 truncate text-ink">
                         {p.name}
                       </span>
                       {isMe && (
                         <>
-                          <span className="shrink-0 rounded-full bg-emerald-500/20 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-emerald-300">
+                          <span className="shrink-0 rounded-full bg-go/20 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-go">
                             You
                           </span>
                           <button
                             type="button"
                             onClick={startEditing}
-                            className="shrink-0 text-xs text-slate-400 underline-offset-2 hover:underline"
+                            className="shrink-0 text-xs text-ink-muted underline-offset-2 hover:underline"
                           >
                             Rename
                           </button>
@@ -329,12 +329,12 @@ function Room({ code, onLeave }: { code: string; onLeave: () => void }) {
         )}
       </div>
 
-      <label className="flex items-center gap-2.5 rounded-xl border border-slate-800 bg-slate-950 px-4 py-3 text-sm font-medium text-slate-200">
+      <label className="flex items-center gap-2.5 rounded-xl border border-line bg-paper px-4 py-3 text-sm font-medium text-ink">
         <input
           type="checkbox"
           checked={me?.ready ?? false}
           onChange={(e) => send({ type: 'toggleReady', ready: e.target.checked })}
-          className="h-4 w-4 accent-emerald-500"
+          className="h-4 w-4 accent-go"
         />
         I'm ready
       </label>
@@ -343,7 +343,7 @@ function Room({ code, onLeave }: { code: string; onLeave: () => void }) {
         type="button"
         disabled={!allReady}
         onClick={() => send({ type: 'start' })}
-        className="w-full rounded-full bg-emerald-500 px-6 py-3 text-base font-semibold text-slate-950 shadow-lg shadow-emerald-500/20 active:scale-95 transition disabled:bg-slate-800 disabled:text-slate-500 disabled:shadow-none"
+        className="w-full rounded-full bg-go px-6 py-3 text-base font-semibold text-paper shadow-lg shadow-go/20 active:scale-95 transition disabled:bg-line disabled:text-ink-faint disabled:shadow-none"
       >
         {allReady ? 'Start match' : 'Waiting for everyone…'}
       </button>
@@ -351,7 +351,7 @@ function Room({ code, onLeave }: { code: string; onLeave: () => void }) {
       <button
         type="button"
         onClick={onLeave}
-        className="w-full rounded-full bg-slate-800 px-6 py-3 text-sm font-semibold text-slate-200 active:scale-95 transition"
+        className="w-full rounded-full bg-line px-6 py-3 text-sm font-semibold text-ink active:scale-95 transition"
       >
         Leave
       </button>
@@ -362,10 +362,10 @@ function Room({ code, onLeave }: { code: string; onLeave: () => void }) {
 function StatusBadge({ status }: { status: 'connecting' | 'open' | 'closed' }) {
   const styles =
     status === 'open'
-      ? 'bg-emerald-500/15 text-emerald-300 border-emerald-500/30'
+      ? 'bg-go/15 text-go border-go/40'
       : status === 'connecting'
-        ? 'bg-amber-500/15 text-amber-300 border-amber-500/30'
-        : 'bg-rose-500/15 text-rose-300 border-rose-500/30';
+        ? 'bg-ochre/15 text-ochre border-ochre/40'
+        : 'bg-accent/15 text-accent border-accent/40';
   const label =
     status === 'open' ? 'Connected' : status === 'connecting' ? 'Connecting' : 'Offline';
   return (
@@ -375,10 +375,10 @@ function StatusBadge({ status }: { status: 'connecting' | 'open' | 'closed' }) {
       <span
         className={`h-1.5 w-1.5 rounded-full ${
           status === 'open'
-            ? 'bg-emerald-400 animate-pulse'
+            ? 'bg-go animate-pulse'
             : status === 'connecting'
-              ? 'bg-amber-400 animate-pulse'
-              : 'bg-rose-400'
+              ? 'bg-ochre animate-pulse'
+              : 'bg-accent'
         }`}
       />
       {label}

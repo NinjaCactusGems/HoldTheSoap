@@ -17,20 +17,20 @@ export function Match({ endsAt }: { endsAt: number }) {
   }, [endsAt]);
 
   return (
-    <div className="fixed inset-0 z-50 flex flex-col items-center justify-center gap-6 bg-slate-950 text-slate-100">
-      <div className="text-sm font-semibold uppercase tracking-[0.3em] text-emerald-400">
+    <div className="fixed inset-0 z-50 flex flex-col items-center justify-center gap-6 bg-staff text-ink">
+      <div className="text-sm font-semibold uppercase tracking-[0.3em] text-go">
         Match in progress
       </div>
       {secondsLeft > 0 ? (
-        <div className="font-mono text-8xl font-bold tabular-nums">
+        <div className="font-serif text-8xl font-bold tabular-nums">
           {secondsLeft}
         </div>
       ) : (
-        <div className="text-6xl font-bold tracking-tight text-emerald-400">
+        <div className="font-serif text-6xl font-bold tracking-tight text-go">
           GO!
         </div>
       )}
-      <div className="text-sm text-slate-500">Returning to the lobby…</div>
+      <div className="text-sm text-ink-muted">Returning to the lobby…</div>
     </div>
   );
 }
