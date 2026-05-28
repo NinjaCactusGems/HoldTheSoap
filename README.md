@@ -44,10 +44,10 @@ All Cloudflare workflows use the org-level secrets `CLOUDFLARE_ACCOUNT_ID` and `
 
 ## One-time setup
 
-There's a `Bootstrap Cloudflare` workflow that does steps 1 and 2 for you using the existing org secrets:
+There's a `Bootstrap Cloudflare` workflow that wires up the account-level setup using the existing org secrets:
 
 1. Open the repo's **Actions** tab → **Bootstrap Cloudflare** → **Run workflow** on `main`.
-2. It creates the `joust` Pages project (with `main` as the production branch) and attaches `joust.ninja-cactus.com` as a custom domain. Both steps are idempotent — re-running is a no-op.
+2. It creates the `joust` Pages project (with `main` as the production branch), attaches `joust.ninja-cactus.com` as a custom domain, creates the matching CNAME, and ensures the account has a workers.dev subdomain so the party worker can deploy. Every step is idempotent — re-running is a no-op once everything is in place.
 3. Once green, you can delete `.github/workflows/bootstrap.yml` or leave it in place.
 
 ### What it's doing under the hood
@@ -66,12 +66,15 @@ If you skip this and let the first prod deploy auto-create, the production branc
 
 `joust.ninja-cactus.com` stays a subdomain of the existing `ninja-cactus.com` zone — not a separate zone.
 
+**4. Workers subdomain** — PUTs `/accounts/{id}/workers/subdomain` with `{"subdomain": "ninja-cactus"}`. A Cloudflare account has at most one workers.dev subdomain; every worker on the account is served from it as `<worker>.<subdomain>.workers.dev`. A fresh account doesn't get one automatically — without it, `wrangler deploy` of the party worker fails with API error 10063 (*"You need a workers.dev subdomain"*). Bootstrap tries `ninja-cactus` first and falls back to `ninja-cactus-<account-id-prefix>` if the preferred name is taken globally. The workflow output prints the resulting URL for the party worker.
+
 ### 3. Verify API token scopes
 
 The bootstrap workflow (and all deploys) needs:
 
 - **Account → Cloudflare Pages → Edit**
 - **Account → Account Settings → Read**
+- **Account → Workers Scripts → Edit** (for the party worker + workers.dev subdomain)
 - **Zone → DNS → Edit** (for `ninja-cactus.com`)
 
 If any is missing, the workflow fails with a clear error in the logs naming the missing scope. Add them to the existing token rather than rotating to a Global API Key.

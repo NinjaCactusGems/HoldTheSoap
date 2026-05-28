@@ -13,10 +13,16 @@ name: Bootstrap Cloudflare
 #      in the ninja-cactus.com zone. This step is required: only the
 #      Cloudflare dashboard's add-domain flow creates DNS automatically;
 #      the API endpoint used in step 2 does not.
+#   4. Ensures the account has a workers.dev subdomain. Without one,
+#      `wrangler deploy` of the party worker fails with API error 10063.
+#      A fresh Cloudflare account does not get this automatically — it's
+#      normally created on first visit to the Workers dashboard, or here
+#      via the API.
 #
 # Required API token scopes (CLOUDFLARE_API_KEY):
 #   - Account → Cloudflare Pages → Edit
 #   - Account → Account Settings → Read
+#   - Account → Workers Scripts → Edit (for the workers.dev subdomain)
 #   - Zone → DNS → Edit (for ninja-cactus.com)
 # If any is missing, the workflow will fail with a clear error.
 
@@ -34,6 +40,10 @@ jobs:
           PROJECT: joust
           DOMAIN: joust.ninja-cactus.com
           PRODUCTION_BRANCH: main
+          # Globally unique. Falls back to ninja-cactus-<accountid-prefix>
+          # if the preferred name is taken by another Cloudflare account.
+          WORKERS_SUBDOMAIN: ninja-cactus
+          WORKER_NAME: joust-party
         run: |
           set -eo pipefail
 
@@ -212,12 +222,77 @@ jobs:
           fi
           echo "::endgroup::"
 
+          echo "::group::Step 4 — Workers subdomain"
+          # A Cloudflare account has at most one workers.dev subdomain;
+          # every worker on the account is served from it as
+          # <worker>.<subdomain>.workers.dev. A fresh account has none, so
+          # `wrangler deploy` fails with API error 10063 until one exists.
+          STATUS=$(api GET "/accounts/$CLOUDFLARE_ACCOUNT_ID/workers/subdomain")
+          case "$STATUS" in
+            200)
+              EXISTING_WS=$(jq -r '.result.subdomain // empty' "$RESPONSE_FILE")
+              ;;
+            404)
+              EXISTING_WS=""
+              ;;
+            *)
+              die "Unexpected status when checking workers.dev subdomain. The token likely lacks 'Workers Scripts: Edit'." "$STATUS"
+              ;;
+          esac
+
+          if [ -n "$EXISTING_WS" ]; then
+            echo "Account already has workers.dev subdomain: '$EXISTING_WS'. Skipping."
+            ASSIGNED_WS=$EXISTING_WS
+          else
+            # First try the preferred name. If it's globally taken,
+            # fall back to a deterministic suffix derived from the
+            # account ID so re-runs land on the same name.
+            CANDIDATES=(
+              "$WORKERS_SUBDOMAIN"
+              "$WORKERS_SUBDOMAIN-${CLOUDFLARE_ACCOUNT_ID:0:8}"
+            )
+            ASSIGNED_WS=""
+            for name in "${CANDIDATES[@]}"; do
+              echo "Attempting to claim workers.dev subdomain: '$name'..."
+              STATUS=$(api PUT "/accounts/$CLOUDFLARE_ACCOUNT_ID/workers/subdomain" \
+                "{\"subdomain\":\"$name\"}")
+              if [ "$STATUS" = "200" ] && [ "$(jq -r '.success // false' "$RESPONSE_FILE")" = "true" ]; then
+                ASSIGNED_WS=$(jq -r '.result.subdomain // empty' "$RESPONSE_FILE")
+                ASSIGNED_WS=${ASSIGNED_WS:-$name}
+                echo "Claimed '$ASSIGNED_WS'."
+                break
+              fi
+              ERR_CODE=$(jq -r '.errors[0].code // empty' "$RESPONSE_FILE")
+              ERR_MSG=$(jq -r '.errors[0].message // empty' "$RESPONSE_FILE")
+              # 10073 = subdomain already taken by another account.
+              if [ "$ERR_CODE" = "10073" ] || echo "$ERR_MSG" | grep -qi "already"; then
+                echo "  '$name' is taken globally. Trying next candidate..."
+                continue
+              fi
+              die "Failed to set workers.dev subdomain to '$name'." "$STATUS"
+            done
+
+            if [ -z "$ASSIGNED_WS" ]; then
+              die "All candidate workers.dev subdomains were taken. Set WORKERS_SUBDOMAIN to a unique value and re-run." "n/a"
+            fi
+          fi
+
+          WORKER_URL="$WORKER_NAME.$ASSIGNED_WS.workers.dev"
+          echo "Party worker will deploy to: https://$WORKER_URL"
+          echo "::endgroup::"
+
           echo ""
           echo "Bootstrap complete."
           echo "  - Pages project:    $PROJECT (production_branch=$CURRENT_BRANCH)"
           echo "  - Project hostname: https://$PROJECT_SUBDOMAIN"
           echo "  - Custom domain:    https://$DOMAIN"
           echo "  - CNAME target:     $TARGET (proxied)"
+          echo "  - Workers subdomain: $ASSIGNED_WS.workers.dev"
+          echo "  - Party worker URL:  https://$WORKER_URL"
+          echo ""
+          echo "Next: set a repository variable PARTY_HOST = $WORKER_URL"
+          echo "(Settings → Secrets and variables → Actions → Variables)."
+          echo "Once set, the next deploy will inline it as VITE_PARTY_HOST."
           echo ""
           if [ -z "$CANONICAL_URL" ]; then
             echo "::warning::The production slot is empty (no canonical deployment)."
