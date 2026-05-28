@@ -45,23 +45,23 @@ function IdleLobby({ onEnter }: { onEnter: (code: string) => void }) {
   const canJoin = normalized.length >= 3;
 
   return (
-    <div className="w-full max-w-sm rounded-2xl border border-slate-800 bg-slate-900/40 p-5 flex flex-col gap-4">
-      <h2 className="text-sm font-semibold uppercase tracking-wider text-slate-400">
+    <div className="w-full max-w-sm rounded-2xl border border-line bg-paper-raised/80 p-5 flex flex-col gap-4">
+      <h2 className="text-sm font-semibold uppercase tracking-wider text-ink-muted">
         Lobby
       </h2>
 
       <button
         type="button"
         onClick={() => onEnter(generateRoomCode())}
-        className="w-full rounded-full bg-emerald-500 px-6 py-3 text-base font-semibold text-slate-950 shadow-lg shadow-emerald-500/20 active:scale-95 transition"
+        className="w-full rounded-full bg-go px-6 py-3 text-base font-semibold text-paper shadow-lg shadow-go/20 active:scale-95 transition"
       >
         Create room
       </button>
 
-      <div className="flex items-center gap-2 text-xs text-slate-500">
-        <div className="h-px flex-1 bg-slate-800" />
+      <div className="flex items-center gap-2 text-xs text-ink-faint">
+        <div className="h-px flex-1 bg-line" />
         <span>or</span>
-        <div className="h-px flex-1 bg-slate-800" />
+        <div className="h-px flex-1 bg-line" />
       </div>
 
       <form
@@ -81,12 +81,12 @@ function IdleLobby({ onEnter }: { onEnter: (code: string) => void }) {
           value={joinCode}
           onChange={(e) => setJoinCode(e.target.value)}
           maxLength={8}
-          className="w-full rounded-xl border border-slate-800 bg-slate-950 px-4 py-3 text-center text-lg font-mono tracking-[0.3em] uppercase text-slate-100 placeholder:text-slate-600 focus:outline-none focus:border-slate-600"
+          className="w-full rounded-xl border border-line bg-paper px-4 py-3 text-center text-lg font-mono tracking-[0.3em] uppercase text-ink placeholder:text-ink-faint focus:outline-none focus:border-ink-muted"
         />
         <button
           type="submit"
           disabled={!canJoin}
-          className="w-full rounded-full bg-slate-100 px-6 py-3 text-base font-semibold text-slate-950 active:scale-95 transition disabled:bg-slate-800 disabled:text-slate-500"
+          className="w-full rounded-full bg-ink px-6 py-3 text-base font-semibold text-paper active:scale-95 transition disabled:bg-line disabled:text-ink-faint"
         >
           Join
         </button>
@@ -145,32 +145,32 @@ function Room({ code, onLeave }: { code: string; onLeave: () => void }) {
   };
 
   return (
-    <div className="w-full max-w-sm rounded-2xl border border-slate-800 bg-slate-900/40 p-5 flex flex-col gap-4">
+    <div className="w-full max-w-sm rounded-2xl border border-line bg-paper-raised/80 p-5 flex flex-col gap-4">
       <div className="flex items-baseline justify-between">
-        <h2 className="text-sm font-semibold uppercase tracking-wider text-slate-400">
+        <h2 className="text-sm font-semibold uppercase tracking-wider text-ink-muted">
           Room
         </h2>
         <StatusBadge status={status} />
       </div>
 
-      <div className="text-center font-mono text-4xl tracking-[0.4em] text-slate-100">
+      <div className="text-center font-serif text-4xl tracking-[0.4em] text-ink">
         {code}
       </div>
 
       <button
         type="button"
         onClick={copy}
-        className="w-full rounded-full border border-slate-700 bg-slate-950 px-4 py-2 text-sm font-medium text-slate-200 active:scale-95 transition"
+        className="w-full rounded-full border border-line bg-paper px-4 py-2 text-sm font-medium text-ink active:scale-95 transition"
       >
         {copied ? 'Link copied' : 'Copy share link'}
       </button>
 
       <div className="flex flex-col gap-2">
-        <div className="text-xs uppercase tracking-wider text-slate-500">
+        <div className="text-xs uppercase tracking-wider text-ink-muted">
           Players · {players.length}
         </div>
         {players.length === 0 ? (
-          <div className="text-sm text-slate-500 italic">
+          <div className="text-sm text-ink-faint italic">
             Waiting for connection…
           </div>
         ) : (
@@ -178,7 +178,7 @@ function Room({ code, onLeave }: { code: string; onLeave: () => void }) {
             {players.map((p) => (
               <li
                 key={p}
-                className="font-mono text-sm text-slate-300 truncate"
+                className="font-mono text-sm text-ink truncate"
                 title={p}
               >
                 {p}
@@ -191,7 +191,7 @@ function Room({ code, onLeave }: { code: string; onLeave: () => void }) {
       <button
         type="button"
         onClick={onLeave}
-        className="w-full rounded-full bg-slate-800 px-6 py-3 text-sm font-semibold text-slate-200 active:scale-95 transition"
+        className="w-full rounded-full bg-line px-6 py-3 text-sm font-semibold text-ink active:scale-95 transition"
       >
         Leave
       </button>
@@ -202,10 +202,10 @@ function Room({ code, onLeave }: { code: string; onLeave: () => void }) {
 function StatusBadge({ status }: { status: 'connecting' | 'open' | 'closed' }) {
   const styles =
     status === 'open'
-      ? 'bg-emerald-500/15 text-emerald-300 border-emerald-500/30'
+      ? 'bg-go/15 text-go border-go/40'
       : status === 'connecting'
-        ? 'bg-amber-500/15 text-amber-300 border-amber-500/30'
-        : 'bg-rose-500/15 text-rose-300 border-rose-500/30';
+        ? 'bg-ochre/15 text-ochre border-ochre/40'
+        : 'bg-accent/15 text-accent border-accent/40';
   const label =
     status === 'open' ? 'Connected' : status === 'connecting' ? 'Connecting' : 'Offline';
   return (
@@ -215,10 +215,10 @@ function StatusBadge({ status }: { status: 'connecting' | 'open' | 'closed' }) {
       <span
         className={`h-1.5 w-1.5 rounded-full ${
           status === 'open'
-            ? 'bg-emerald-400 animate-pulse'
+            ? 'bg-go animate-pulse'
             : status === 'connecting'
-              ? 'bg-amber-400 animate-pulse'
-              : 'bg-rose-400'
+              ? 'bg-ochre animate-pulse'
+              : 'bg-accent'
         }`}
       />
       {label}

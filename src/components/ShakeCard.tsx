@@ -51,15 +51,15 @@ function IdleView({
         type="button"
         onClick={start}
         disabled={blocked}
-        className="w-full rounded-full bg-indigo-500 px-8 py-4 text-lg font-semibold text-white shadow-lg shadow-indigo-500/30 active:scale-95 transition disabled:bg-slate-700 disabled:shadow-none"
+        className="w-full rounded-full bg-accent px-8 py-4 text-lg font-semibold text-paper shadow-lg shadow-accent/25 hover:bg-accent-soft active:scale-95 transition disabled:bg-line disabled:text-ink-faint disabled:shadow-none"
       >
         Start
       </button>
-      <p className="text-sm text-slate-400 text-center">
+      <p className="text-sm text-ink-muted text-center">
         Tap to enable motion sensing.
       </p>
       {blocked && (
-        <p className="text-sm text-rose-400 text-center">
+        <p className="text-sm text-accent text-center">
           Motion sensors aren&apos;t available or were denied. Open
           joust.ninja-cactus.com on a phone.
         </p>
@@ -87,9 +87,9 @@ function RunningView({
   return (
     <div className="flex flex-col items-stretch gap-5 w-full max-w-sm">
       <label className="flex flex-col gap-2">
-        <span className="flex justify-between text-sm text-slate-400">
+        <span className="flex justify-between text-sm text-ink-muted">
           <span>Threshold</span>
-          <span className="font-mono text-slate-200">
+          <span className="font-mono text-ink">
             {threshold.toFixed(1)} m/s²
           </span>
         </span>
@@ -100,36 +100,36 @@ function RunningView({
           step={0.5}
           value={threshold}
           onChange={(e) => setThreshold(Number(e.target.value))}
-          className="w-full accent-indigo-500"
+          className="w-full accent-accent"
         />
       </label>
 
       <div className="flex flex-col gap-2">
-        <div className="flex justify-between text-sm text-slate-400">
+        <div className="flex justify-between text-sm text-ink-muted">
           <span>Acceleration</span>
-          <span className="font-mono text-slate-200">
+          <span className="font-mono text-ink">
             {magnitude.toFixed(1)} m/s²
           </span>
         </div>
         <div
           className={`relative h-4 w-full rounded-full overflow-hidden transition-colors duration-150 ${
-            flashing ? 'bg-rose-500/40' : 'bg-slate-800'
+            flashing ? 'bg-flash/40' : 'bg-line'
           }`}
         >
           <div
-            className="h-full bg-indigo-500 transition-[width] duration-75 ease-linear"
+            className="h-full bg-accent transition-[width] duration-75 ease-linear"
             style={{ width: `${fillPct}%` }}
           />
           <div
-            className="absolute top-0 h-full w-px bg-rose-300/80"
+            className="absolute top-0 h-full w-px bg-ink/70"
             style={{ left: `${tickPct}%` }}
             aria-hidden="true"
           />
         </div>
       </div>
 
-      <div className="text-sm text-slate-400 text-center">
-        Shakes: <span className="font-mono text-slate-200">{shakeCount}</span>
+      <div className="text-sm text-ink-muted text-center">
+        Shakes: <span className="font-mono text-ink">{shakeCount}</span>
       </div>
     </div>
   );

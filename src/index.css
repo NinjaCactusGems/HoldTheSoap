@@ -1,1 +1,31 @@
 @import "tailwindcss";
+
+@theme {
+  --color-paper:        #F5F0E6; /* warm aged ivory page bg */
+  --color-paper-raised: #FBF8F1; /* card surface (lifts above page) */
+  --color-ink:          #1F1B16; /* primary text, ~15:1 on paper (AAA) */
+  --color-ink-muted:    #6B5E4E; /* labels / secondary, ~4.9:1 (AA) */
+  --color-ink-faint:    #9C8E79; /* placeholders, footer, disabled */
+  --color-line:         #D8CFBE; /* borders, dividers, meter track */
+  --color-accent:       #7A2E2E; /* burgundy ink — primary buttons/fill */
+  --color-accent-soft:  #9B4444; /* hover */
+  --color-flash:        #B5532E; /* sepia-burgundy shake flash */
+
+  /* muted status tones (earthy, period-appropriate) */
+  --color-go:    #4F6F52; /* connected / create */
+  --color-ochre: #9A7B2E; /* connecting */
+
+  --font-serif: ui-serif, Georgia, "Times New Roman", Cambria, serif;
+}
+
+@layer components {
+  /* Subtle staff-line ruling: 1px ink line every 28px at 6% — barely there */
+  .bg-staff {
+    background-color: var(--color-paper);
+    background-image: repeating-linear-gradient(
+      to bottom,
+      transparent 0 27px,
+      color-mix(in srgb, var(--color-ink) 6%, transparent) 27px 28px
+    );
+  }
+}
