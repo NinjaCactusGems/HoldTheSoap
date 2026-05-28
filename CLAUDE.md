@@ -38,3 +38,17 @@ Notes for workflows:
   - All PRs and pushes to `main` also run `.github/workflows/ci.yml` (lint, typecheck, build).
 - Keep infrastructure-as-code (wrangler.toml, workflow files) in the repo so deploys are reproducible. Cloudflare's Git integration is intentionally not used — the repo is the source of truth.
 - See `README.md` for one-time setup (Pages project pre-creation, custom domain attach, token scope check).
+
+## Gameplay
+
+### Shake-detection thresholds
+
+The accelerometer hook (`src/hooks/useShakeDetector.ts`) compares smoothed acceleration magnitude against a threshold. Three named presets to use as defaults or UI options:
+
+| Preset    | Threshold | Notes                         |
+| --------- | --------- | ----------------------------- |
+| Sensitive | 3 m/s²    | Triggers on small jolts.      |
+| Normal    | 7 m/s²    | Default for new players.      |
+| Forgiving | 12 m/s²   | Needs a deliberate shove.     |
+
+Units are m/s² (acceleration magnitude), matching the `DeviceMotionEvent.acceleration` API. The slider in `App.tsx` and any future per-game-mode defaults should anchor on these values.
