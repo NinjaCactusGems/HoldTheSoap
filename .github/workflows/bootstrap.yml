@@ -110,11 +110,24 @@ jobs:
                 die "Failed to create Pages project '$PROJECT'. The token likely lacks the 'Cloudflare Pages: Edit' scope." "$STATUS"
               fi
               echo "Created project '$PROJECT' with production_branch=$PRODUCTION_BRANCH."
+              # Re-fetch to capture the assigned subdomain.
+              STATUS=$(api GET "/accounts/$CLOUDFLARE_ACCOUNT_ID/pages/projects/$PROJECT")
               ;;
             *)
               die "Unexpected status when checking project '$PROJECT'." "$STATUS"
               ;;
           esac
+
+          # Cloudflare reserves short/common .pages.dev names, so our
+          # project's actual subdomain might be "joust-abc", not "joust".
+          # Always use whatever the API tells us — never hardcode.
+          PROJECT_SUBDOMAIN=$(jq -r '.result.subdomain // empty' "$RESPONSE_FILE")
+          if [ -z "$PROJECT_SUBDOMAIN" ]; then
+            die "Project response did not include a .subdomain field. Cannot determine the CNAME target." "$STATUS"
+          fi
+          LATEST_PROD_URL=$(jq -r '.result.canonical_deployment.url // .result.latest_deployment.url // "(none)"' "$RESPONSE_FILE")
+          echo "  Project hostname    : https://$PROJECT_SUBDOMAIN"
+          echo "  Latest deployment   : $LATEST_PROD_URL"
           echo "::endgroup::"
 
           echo "::group::Step 2 — Custom domain ($DOMAIN)"
@@ -136,11 +149,11 @@ jobs:
           fi
           echo "::endgroup::"
 
-          echo "::group::Step 3 — DNS record ($DOMAIN -> $PROJECT.pages.dev)"
+          echo "::group::Step 3 — DNS record ($DOMAIN -> $PROJECT_SUBDOMAIN)"
           # Derive the zone name from the domain. $DOMAIN is a single
           # subdomain of the zone (joust.ninja-cactus.com -> ninja-cactus.com).
           ZONE_NAME=${DOMAIN#*.}
-          TARGET="$PROJECT.pages.dev"
+          TARGET="$PROJECT_SUBDOMAIN"
 
           STATUS=$(api GET "/zones?name=$ZONE_NAME")
           if [ "$STATUS" != "200" ]; then
@@ -156,29 +169,41 @@ jobs:
           if [ "$STATUS" != "200" ]; then
             die "Failed to list DNS records for zone '$ZONE_NAME'." "$STATUS"
           fi
+          EXISTING_ID=$(jq -r '.result[0].id // empty' "$RESPONSE_FILE")
           EXISTING_CONTENT=$(jq -r '.result[0].content // empty' "$RESPONSE_FILE")
-          if [ -n "$EXISTING_CONTENT" ]; then
-            echo "CNAME already exists: $DOMAIN -> $EXISTING_CONTENT. Skipping."
-            if [ "$EXISTING_CONTENT" != "$TARGET" ]; then
-              echo "::warning::Existing CNAME points to '$EXISTING_CONTENT', expected '$TARGET'. Fix manually if the domain doesn't resolve."
-            fi
-          else
+
+          if [ -z "$EXISTING_ID" ]; then
             echo "Creating CNAME: $DOMAIN -> $TARGET (proxied through Cloudflare)..."
             STATUS=$(api POST "/zones/$ZONE_ID/dns_records" \
               "{\"type\":\"CNAME\",\"name\":\"$DOMAIN\",\"content\":\"$TARGET\",\"proxied\":true}")
             if [ "$STATUS" != "200" ] || [ "$(jq -r '.success // false' "$RESPONSE_FILE")" != "true" ]; then
               die "Failed to create CNAME record. The token likely lacks 'Zone:DNS:Edit' for $ZONE_NAME." "$STATUS"
             fi
-            echo "CNAME created. DNS propagates within seconds; SSL provisioning completes in ~1 minute."
+            echo "CNAME created."
+          elif [ "$EXISTING_CONTENT" = "$TARGET" ]; then
+            echo "CNAME already correct: $DOMAIN -> $EXISTING_CONTENT. Skipping."
+          else
+            echo "Existing CNAME points to '$EXISTING_CONTENT', but project subdomain is '$TARGET'. Updating..."
+            STATUS=$(api PUT "/zones/$ZONE_ID/dns_records/$EXISTING_ID" \
+              "{\"type\":\"CNAME\",\"name\":\"$DOMAIN\",\"content\":\"$TARGET\",\"proxied\":true}")
+            if [ "$STATUS" != "200" ] || [ "$(jq -r '.success // false' "$RESPONSE_FILE")" != "true" ]; then
+              die "Failed to update CNAME record." "$STATUS"
+            fi
+            echo "CNAME updated: $DOMAIN -> $TARGET."
           fi
           echo "::endgroup::"
 
           echo ""
           echo "Bootstrap complete."
-          echo "  - Pages project:  $PROJECT (production_branch=$PRODUCTION_BRANCH)"
-          echo "  - Custom domain:  https://$DOMAIN"
-          echo "  - CNAME target:   $TARGET"
+          echo "  - Pages project:    $PROJECT (production_branch=$PRODUCTION_BRANCH)"
+          echo "  - Project hostname: https://$PROJECT_SUBDOMAIN"
+          echo "  - Custom domain:    https://$DOMAIN"
+          echo "  - CNAME target:     $TARGET (proxied)"
           echo ""
-          echo "If $DOMAIN does not load within a minute, check the Custom Domains"
-          echo "tab of the $PROJECT Pages project in the Cloudflare dashboard for"
+          echo "If $DOMAIN does not load within a minute, the Pages production"
+          echo "slot is probably empty or the deploy went to a preview slot."
+          echo "Check 'Latest deployment' above — if it's '(none)' or a"
+          echo "preview URL, the most recent push-to-main deploy needs to"
+          echo "re-run. Otherwise check the Custom Domains tab of the"
+          echo "$PROJECT Pages project in the Cloudflare dashboard for"
           echo "SSL/verification status."
