@@ -2,8 +2,9 @@ import { useEffect, useRef } from 'react';
 import musicUrl from '../assets/match-music.m4a';
 
 const TARGET_VOLUME = 0.85;
-const FADE_IN_MS = 200;
-const FADE_OUT_MS = 800;
+const FADE_IN_MS = 250;
+const FADE_OUT_MS = 600;
+const MUTE_FADE_MS = 250;
 
 /**
  * Ramp an audio element's volume to `target` over `ms`, then run `onDone`.
@@ -32,25 +33,32 @@ function fade(
 }
 
 /**
- * Plays the match soundtrack, looping, in sync across clients.
+ * Plays the match soundtrack, looping.
  *
- * Each time a new round starts (a fresh, non-null `roundSignal` — the server's
- * "Get Ready" countdown timestamp), playback is (re)seeked to `getOffsetSec()`
- * — the one-way network latency (half the round-trip) — so that, accounting for
- * the time the start message spent in flight, every client lands on the same
- * position in the track.
+ * Playback begins exactly when the "Get Ready" countdown hits zero — i.e. at
+ * `readyEndsAt`, the server-authoritative moment jousting starts / "GO". The
+ * server broadcasts that timestamp ~5s ahead of time; `toLocalTime` (from
+ * useServerClock) converts it into this client's clock so every device in the
+ * room starts at the same real instant, irrespective of clock skew.
  *
- * The track keeps looping after the round ends (through winner + lobby) so there
- * is no long gap between rounds. It fades out only when the next round starts
- * (a brief dip before re-syncing) or when the room is left (unmount).
+ * The track keeps looping through the round, the winner screen, and the lobby
+ * so there is no gap between rounds; each new round re-seeks it to the start at
+ * "GO" to re-sync. It fades out only when the room is left (unmount).
+ *
+ * Eliminated players hear nothing: the soundtrack fades to silent while
+ * `eliminated` is true and fades back when they re-enter the next round.
  */
 export function useMatchMusic(
-  roundSignal: number | null,
-  getOffsetSec: () => number,
+  readyEndsAt: number | null,
+  eliminated: boolean,
+  toLocalTime: (serverTs: number) => number,
 ) {
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const cancelFadeRef = useRef<(() => void) | null>(null);
+  const startTimerRef = useRef<number | null>(null);
   const lastRoundRef = useRef<number | null>(null);
+  const eliminatedRef = useRef(eliminated);
+  eliminatedRef.current = eliminated;
 
   // Create the element once and unlock autoplay on the first user gesture.
   useEffect(() => {
@@ -85,6 +93,7 @@ export function useMatchMusic(
       window.removeEventListener('pointerdown', unlock);
       window.removeEventListener('keydown', unlock);
       cancelFadeRef.current?.();
+      if (startTimerRef.current) window.clearTimeout(startTimerRef.current);
       // Leaving the room: fade out, independent of React, then release.
       if (!audio.paused) {
         fade(audio, 0, FADE_OUT_MS, () => {
@@ -98,28 +107,27 @@ export function useMatchMusic(
     };
   }, []);
 
-  // (Re)sync playback on each new match start.
+  // Start (or re-sync) playback exactly when the countdown reaches zero.
   useEffect(() => {
     const audio = audioRef.current;
     if (!audio) return;
-    if (roundSignal == null || roundSignal === lastRoundRef.current) {
-      // Round ended (kept looping) or an unrelated state update — do nothing.
-      return;
-    }
-    lastRoundRef.current = roundSignal;
-    cancelFadeRef.current?.();
+    if (readyEndsAt == null || readyEndsAt === lastRoundRef.current) return;
+    lastRoundRef.current = readyEndsAt;
 
     const begin = () => {
-      const offset = Math.max(0, getOffsetSec());
+      startTimerRef.current = null;
+      cancelFadeRef.current?.();
       try {
-        audio.currentTime = offset;
+        audio.currentTime = 0; // seek to the top so every client is aligned
       } catch {
-        // currentTime can throw before metadata is ready; the offset is tiny.
+        // currentTime can throw before metadata is ready; ignore.
       }
+      audio.muted = false;
       audio.volume = 0;
       void audio
         .play()
         .then(() => {
+          if (eliminatedRef.current) return; // out already — stay silent
           cancelFadeRef.current = fade(audio, TARGET_VOLUME, FADE_IN_MS);
         })
         .catch(() => {
@@ -127,13 +135,29 @@ export function useMatchMusic(
         });
     };
 
-    if (!audio.paused && audio.volume > 0.01) {
-      // A round is already playing: dip out, then re-sync the new round.
-      cancelFadeRef.current = fade(audio, 0, FADE_OUT_MS, begin);
-    } else {
-      begin();
-    }
-    // getOffsetSec is read lazily inside begin(); excluded to avoid restarts.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [roundSignal]);
+    if (startTimerRef.current) window.clearTimeout(startTimerRef.current);
+    // readyEndsAt is in server time; convert to this client's clock so all
+    // devices fire at the same real instant.
+    const delay = Math.max(0, toLocalTime(readyEndsAt) - Date.now());
+    startTimerRef.current = window.setTimeout(begin, delay);
+
+    return () => {
+      if (startTimerRef.current) {
+        window.clearTimeout(startTimerRef.current);
+        startTimerRef.current = null;
+      }
+    };
+  }, [readyEndsAt, toLocalTime]);
+
+  // Mute the soundtrack for eliminated players; restore when back in the round.
+  useEffect(() => {
+    const audio = audioRef.current;
+    if (!audio || audio.paused) return;
+    cancelFadeRef.current?.();
+    cancelFadeRef.current = fade(
+      audio,
+      eliminated ? 0 : TARGET_VOLUME,
+      MUTE_FADE_MS,
+    );
+  }, [eliminated]);
 }

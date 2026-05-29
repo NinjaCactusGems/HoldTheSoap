@@ -172,10 +172,13 @@ export class Main extends Server {
         break;
       }
       case 'ping': {
-        // Echo the client's timestamp back so it can measure round-trip time
-        // and synchronise match audio. Reply only to the sender.
+        // Clock sync: echo the client's send time plus our own clock, so the
+        // client can estimate round-trip time and its offset from server time
+        // (Cristian's algorithm) and schedule synced events like match start.
         if (typeof msg.t === 'number') {
-          connection.send(JSON.stringify({ type: 'pong', t: msg.t }));
+          connection.send(
+            JSON.stringify({ type: 'pong', t: msg.t, serverTime: Date.now() }),
+          );
         }
         break;
       }
