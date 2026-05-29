@@ -77,16 +77,14 @@ function BulletFigure({ n }: { n: 1 | 2 | 3 | 4 }) {
     'aria-hidden': true,
   };
   const ink = 'h-9 w-auto text-ink opacity-40';
-  const eye = { r: 1.3, fill: 'currentColor', stroke: 'none' };
 
-  // 1) Standing steady: both arms curved out holding a small phone, eye looking
-  // forward rather than down at the screen.
+  // 1) Standing steady: both arms curved out holding a small phone; the head is
+  // a calm eighth note.
   if (n === 1) {
     return (
       <svg {...base} className={ink}>
         <line x1="24" y1="40" x2="72" y2="40" />
-        <circle cx="40" cy="13" r="5" />
-        <circle cx="43" cy="11" {...eye} />
+        <NoteHead cx={40} cy={13} r={5} dir={1} />
         <line x1="40" y1="18" x2="40" y2="30" />
         <line x1="40" y1="30" x2="35" y2="40" />
         <line x1="40" y1="30" x2="45" y2="40" />
@@ -99,21 +97,19 @@ function BulletFigure({ n }: { n: 1 | 2 | 3 | 4 }) {
     );
   }
   // 2) Dance & weave: two players sizing each other up — one near (larger), one
-  // further back (smaller), eyes on each other.
+  // further back (smaller), facing each other, heads as eighth notes.
   if (n === 2) {
     return (
       <svg {...base} className={ink}>
         {/* background player — smaller, set back, facing right, arms open */}
-        <circle cx="20" cy="15" r="3.5" />
-        <circle cx="22.2" cy="14.5" r="0.9" fill="currentColor" stroke="none" />
+        <NoteHead cx={20} cy={15} r={3.5} dir={-1} />
         <line x1="20" y1="18.5" x2="20" y2="27" />
         <line x1="20" y1="27" x2="16" y2="34" />
         <line x1="20" y1="27" x2="24" y2="34" />
         <path d="M20 20 q-6 -1 -10 -5" />
         <path d="M20 20 q6 -1 10 -5" />
         {/* foreground player — larger, facing left, same wide welcome pose */}
-        <circle cx="66" cy="12" r="5.5" />
-        <circle cx="62.3" cy="11" {...eye} />
+        <NoteHead cx={66} cy={12} r={5.5} dir={1} />
         <line x1="66" y1="17.5" x2="66" y2="32" />
         <line x1="66" y1="32" x2="60" y2="42" />
         <line x1="66" y1="32" x2="72" y2="42" />
@@ -149,13 +145,44 @@ function BulletFigure({ n }: { n: 1 | 2 | 3 | 4 }) {
   return (
     <svg {...base} className={ink}>
       <line x1="30" y1="40" x2="66" y2="40" />
-      <circle cx="48" cy="11" r="5" />
-      <circle cx="50" cy="10" {...eye} />
+      <NoteHead cx={48} cy={11} r={5} dir={-1} />
       <line x1="48" y1="16" x2="48" y2="30" />
       <line x1="48" y1="30" x2="43" y2="40" />
       <line x1="48" y1="30" x2="53" y2="40" />
       {/* both arms as one connected stroke through the shoulders, raised */}
       <path d="M40 8 L48 19 L56 8" />
     </svg>
+  );
+}
+
+// A figure's head drawn as an eighth note: the filled knob is the head, a stem
+// rises from the crown, and the flag swirls back down like a lock of hair.
+// `dir` points the swirl toward the figure's back (-1 = left, 1 = right).
+function NoteHead({
+  cx,
+  cy,
+  r,
+  dir,
+}: {
+  cx: number;
+  cy: number;
+  r: number;
+  dir: 1 | -1;
+}) {
+  const stemX = cx + dir * (r - 0.5); // rises from the side of the knob
+  const stemTop = cy - 2 * r - 0.8; // where the hair tuft peaks
+  const s = r / 5; // scale the flag to the head size
+  // The flag is a filled swirl, slightly thicker where it meets the stem and
+  // tapering to a point — a lock of hair trailing toward the figure's back.
+  const flag =
+    `M${stemX} ${stemTop} ` +
+    `C${stemX + dir * 7 * s} ${stemTop + 0.6 * s} ${stemX + dir * 8.5 * s} ${stemTop + 5 * s} ${stemX + dir * 4.5 * s} ${stemTop + 9.5 * s} ` +
+    `C${stemX + dir * 5.5 * s} ${stemTop + 6.5 * s} ${stemX + dir * 2 * s} ${stemTop + 4.5 * s} ${stemX} ${stemTop + 2.6 * s} Z`;
+  return (
+    <>
+      <circle cx={cx} cy={cy} r={r} fill="currentColor" stroke="none" />
+      <line x1={stemX} y1={cy} x2={stemX} y2={stemTop} />
+      <path d={flag} fill="currentColor" stroke="none" />
+    </>
   );
 }
