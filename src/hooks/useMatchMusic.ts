@@ -1,10 +1,33 @@
 import { useEffect, useRef } from 'react';
 import musicUrl from '../assets/match-music.m4a';
+import { useSyncedTempo } from './useSyncedTempo';
+import { TEMPO_RATE, type Tempo } from '../lib/tempo';
 
 const TARGET_VOLUME = 0.85;
 const FADE_IN_MS = 250;
 const FADE_OUT_MS = 600;
 const MUTE_FADE_MS = 250;
+const RATE_RAMP_MS = 450;
+
+// Older Safari/Firefox spell preservesPitch differently.
+interface PitchPreservingAudio extends HTMLAudioElement {
+  mozPreservesPitch?: boolean;
+  webkitPreservesPitch?: boolean;
+}
+
+/** Glide an audio element's playbackRate to `target` over `ms` (clamped). */
+function rampRate(audio: HTMLAudioElement, target: number, ms: number): () => void {
+  const from = audio.playbackRate;
+  const startedAt = performance.now();
+  let raf = 0;
+  const tick = (now: number) => {
+    const k = ms <= 0 ? 1 : Math.min(1, (now - startedAt) / ms);
+    audio.playbackRate = Math.max(0.25, Math.min(4, from + (target - from) * k));
+    if (k < 1) raf = requestAnimationFrame(tick);
+  };
+  raf = requestAnimationFrame(tick);
+  return () => cancelAnimationFrame(raf);
+}
 
 /**
  * Ramp an audio element's volume to `target` over `ms`, then run `onDone`.
@@ -52,9 +75,12 @@ export function useMatchMusic(
   readyEndsAt: number | null,
   eliminated: boolean,
   toLocalTime: (serverTs: number) => number,
+  tempo: Tempo,
+  tempoEffectiveAt: number | null,
 ) {
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const cancelFadeRef = useRef<(() => void) | null>(null);
+  const cancelRateRef = useRef<(() => void) | null>(null);
   const startTimerRef = useRef<number | null>(null);
   const lastRoundRef = useRef<number | null>(null);
   const eliminatedRef = useRef(eliminated);
@@ -62,10 +88,15 @@ export function useMatchMusic(
 
   // Create the element once and unlock autoplay on the first user gesture.
   useEffect(() => {
-    const audio = new Audio(musicUrl);
+    const audio = new Audio(musicUrl) as PitchPreservingAudio;
     audio.loop = true;
     audio.preload = 'auto';
     audio.volume = 0;
+    // Preserve pitch so tempo shifts read as a clean time-stretch effect
+    // rather than a pitched-up/down tape warble.
+    audio.preservesPitch = true;
+    audio.mozPreservesPitch = true;
+    audio.webkitPreservesPitch = true;
     audioRef.current = audio;
 
     let unlocked = false;
@@ -93,6 +124,7 @@ export function useMatchMusic(
       window.removeEventListener('pointerdown', unlock);
       window.removeEventListener('keydown', unlock);
       cancelFadeRef.current?.();
+      cancelRateRef.current?.();
       if (startTimerRef.current) window.clearTimeout(startTimerRef.current);
       // Leaving the room: fade out, independent of React, then release.
       if (!audio.paused) {
@@ -117,11 +149,13 @@ export function useMatchMusic(
     const begin = () => {
       startTimerRef.current = null;
       cancelFadeRef.current?.();
+      cancelRateRef.current?.();
       try {
         audio.currentTime = 0; // seek to the top so every client is aligned
       } catch {
         // currentTime can throw before metadata is ready; ignore.
       }
+      audio.playbackRate = TEMPO_RATE.normal; // rounds always begin at normal
       audio.muted = false;
       audio.volume = 0;
       void audio
@@ -160,4 +194,12 @@ export function useMatchMusic(
       MUTE_FADE_MS,
     );
   }, [eliminated]);
+
+  // Shift the playback rate in lockstep with the room when the tempo changes.
+  useSyncedTempo(tempo, tempoEffectiveAt, toLocalTime, (next) => {
+    const audio = audioRef.current;
+    if (!audio) return;
+    cancelRateRef.current?.();
+    cancelRateRef.current = rampRate(audio, TEMPO_RATE[next], RATE_RAMP_MS);
+  });
 }

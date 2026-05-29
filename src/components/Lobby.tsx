@@ -7,13 +7,16 @@ import { Game, type Phase, type Reaction } from './Game';
 import { useShakeDetector } from '../hooks/useShakeDetector';
 import { useMatchMusic } from '../hooks/useMatchMusic';
 import { useServerClock } from '../hooks/useServerClock';
+import { useSyncedTempo } from '../hooks/useSyncedTempo';
+import { TEMPO_THRESHOLD, type Tempo } from '../lib/tempo';
 
 const PARTY_HOST = import.meta.env.VITE_PARTY_HOST || 'localhost:1999';
 
 const PLAYER_NAME_KEY = 'joust:playerName';
 
-// Jousting watches motion at the Normal/medium threshold (7 m/s², per CLAUDE.md).
-const JOUST_THRESHOLD = 7;
+// Jousting starts at the Normal/medium threshold (7 m/s², per CLAUDE.md); tempo
+// shifts move it to Sensitive (slow) or Forgiving (fast) mid-round.
+const JOUST_THRESHOLD = TEMPO_THRESHOLD.normal;
 
 type Player = {
   id: string;
@@ -137,6 +140,8 @@ function Room({ code, onLeave }: { code: string; onLeave: () => void }) {
   const [readyEndsAt, setReadyEndsAt] = useState<number | null>(null);
   const [winnerEndsAt, setWinnerEndsAt] = useState<number | null>(null);
   const [winnerId, setWinnerId] = useState<string | null>(null);
+  const [tempo, setTempo] = useState<Tempo>('normal');
+  const [tempoEffectiveAt, setTempoEffectiveAt] = useState<number | null>(null);
   // The winner we keep showing once the server returns to the lobby, so the
   // lobby can slide in beneath the celebration. Cleared when a new round starts.
   const [postGameWinnerId, setPostGameWinnerId] = useState<string | null>(null);
@@ -175,6 +180,8 @@ function Room({ code, onLeave }: { code: string; onLeave: () => void }) {
           readyEndsAt: number | null;
           winnerEndsAt: number | null;
           winnerId: string | null;
+          tempo: Tempo;
+          tempoEffectiveAt: number | null;
           players: Player[];
           reaction: Reaction;
         }>;
@@ -184,6 +191,8 @@ function Room({ code, onLeave }: { code: string; onLeave: () => void }) {
           setReadyEndsAt(data.readyEndsAt ?? null);
           setWinnerEndsAt(data.winnerEndsAt ?? null);
           setWinnerId(data.winnerId ?? null);
+          setTempo(data.tempo ?? 'normal');
+          setTempoEffectiveAt(data.tempoEffectiveAt ?? null);
           setPlayers(Array.isArray(data.players) ? data.players : []);
           // Remember the winner so the post-game lobby can keep showing it; a
           // new round (ready/jousting) clears it.
@@ -230,10 +239,22 @@ function Room({ code, onLeave }: { code: string; onLeave: () => void }) {
   const { toLocalTime } = useServerClock(socket, status === 'open');
 
   // Looping match soundtrack: starts when the "Get Ready" countdown hits zero
-  // (readyEndsAt) — in lockstep across devices via the server clock — and goes
-  // silent for this player while they're eliminated.
+  // (readyEndsAt) — in lockstep across devices via the server clock — shifts
+  // tempo with the room, and goes silent for this player while eliminated.
   const me = players.find((p) => p.id === myId);
-  useMatchMusic(readyEndsAt, Boolean(me?.eliminated), toLocalTime);
+  useMatchMusic(
+    readyEndsAt,
+    Boolean(me?.eliminated),
+    toLocalTime,
+    tempo,
+    tempoEffectiveAt,
+  );
+
+  // Match the shake sensitivity to the tempo, in lockstep with the music:
+  // slow → Sensitive (twitchy), fast → Forgiving (needs a real shove).
+  useSyncedTempo(tempo, tempoEffectiveAt, toLocalTime, (next) =>
+    detector.setThreshold(TEMPO_THRESHOLD[next]),
+  );
 
   const send = (msg: unknown) => {
     if (status === 'open') socket.send(JSON.stringify(msg));
