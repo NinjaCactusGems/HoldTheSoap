@@ -33,14 +33,14 @@ export const howToPlayRules: Record<Locale, (() => ReactNode)[]> = {
   de: [
     () => (
       <>
-        Halte dein Handy nach vorne, <strong>weg von deinem Körper</strong>, und
-        halte es ruhig.
+        Halte dein Handy <strong>hinter deinem Körper</strong> und halte es
+        ruhig.
       </>
     ),
     () => (
       <>
-        <strong>Tanze und weiche aus</strong> rund um die anderen Spieler, ohne
-        dein eigenes Handy zu erschüttern.
+        <strong>Umtanze</strong> andere Spieler und{' '}
+        <strong>weiche ihnen aus</strong>, ohne dein Handy zu erschüttern.
       </>
     ),
     () => (
@@ -52,7 +52,7 @@ export const howToPlayRules: Record<Locale, (() => ReactNode)[]> = {
     ),
     () => (
       <>
-        Sei der <strong>Letzte, der übrig bleibt</strong>, um das Turnier zu
+        Sei der <strong>Letzte, der übrig bleibt</strong>, um das Spiel zu
         gewinnen.
       </>
     ),

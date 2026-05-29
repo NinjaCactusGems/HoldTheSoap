@@ -53,7 +53,7 @@ export type TranslationKey = keyof typeof en;
 export const de: Record<TranslationKey, string> = {
   'howToPlay.title': 'Spielanleitung',
   'howToPlay.intro':
-    'Joust ist ein Spiel aus Bewegung und Balance — gespielt in der echten Welt, das Handy in der Hand.',
+    'Joust ist ein Bewegungs- und Balance-Spiel, gespielt in der echten Welt mit dem Handy in der Hand.',
 
   'lobby.create': 'Gruppe erstellen',
   'lobby.or': 'oder',

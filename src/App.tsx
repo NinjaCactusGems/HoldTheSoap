@@ -10,7 +10,7 @@ export default function App() {
 
       <main className="relative z-10 flex-1 px-6 pt-12 pb-10 sm:px-8 sm:pt-16 max-w-md mx-auto w-full flex flex-col items-center gap-8">
         <div className="relative w-full">
-          <div className="absolute right-0 top-0">
+          <div className="absolute -top-7 -right-1">
             <LanguageSwitcher />
           </div>
           <h1 className="font-serif text-5xl sm:text-6xl font-semibold tracking-tight text-center">
