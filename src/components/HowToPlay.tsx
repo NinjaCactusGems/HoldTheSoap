@@ -84,7 +84,7 @@ function BulletFigure({ n }: { n: 1 | 2 | 3 | 4 }) {
     return (
       <svg {...base} className={ink}>
         <line x1="24" y1="40" x2="72" y2="40" />
-        <NoteHead cx={40} cy={13} r={5} dir={-1} />
+        <NoteHead cx={40} cy={13} r={5} dir={1} />
         <line x1="40" y1="18" x2="40" y2="30" />
         <line x1="40" y1="30" x2="35" y2="40" />
         <line x1="40" y1="30" x2="45" y2="40" />
