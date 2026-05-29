@@ -15,7 +15,8 @@ type RoomState = {
 type ClientMessage =
   | { type: 'setName'; name: string }
   | { type: 'toggleReady'; ready: boolean }
-  | { type: 'start' };
+  | { type: 'start' }
+  | { type: 'ping'; t: number };
 
 const MAX_PLAYERS_PER_ROOM = 16;
 const MAX_NAME_LENGTH = 24;
@@ -96,6 +97,14 @@ export class Main extends Server {
       }
       case 'start': {
         this.tryStartMatch();
+        break;
+      }
+      case 'ping': {
+        // Echo the client's timestamp back so it can measure round-trip time
+        // and synchronise match audio. Reply only to the sender.
+        if (typeof msg.t === 'number') {
+          connection.send(JSON.stringify({ type: 'pong', t: msg.t }));
+        }
         break;
       }
     }
