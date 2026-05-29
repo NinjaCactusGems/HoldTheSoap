@@ -4,6 +4,10 @@ type Phase = 'lobby' | 'ready' | 'jousting' | 'winner';
 
 type Reaction = 'turd' | 'heart' | 'dancer' | 'dancerF';
 
+// Tempo shifts during jousting: the music speed and shake sensitivity change
+// for the whole room at once. See src/lib/tempo.ts for the client-side targets.
+type Tempo = 'normal' | 'fast' | 'slow';
+
 type Player = {
   id: string;
   name: string;
@@ -18,6 +22,11 @@ type RoomState = {
   readyEndsAt: number | null;
   winnerEndsAt: number | null;
   winnerId: string | null;
+  // Current jousting tempo and the server time it takes effect (announced a
+  // touch ahead so every client can schedule the flip in lockstep). Outside
+  // jousting this is always normal / null.
+  tempo: Tempo;
+  tempoEffectiveAt: number | null;
   players: Player[];
 };
 
@@ -44,6 +53,12 @@ const MAX_NAME_LENGTH = 24;
 const READY_DURATION_MS = 5000;
 const WINNER_DURATION_MS = 10000;
 const REACTIONS: readonly Reaction[] = ['turd', 'heart', 'dancer', 'dancerF'];
+
+// Each tempo phase holds 10–15s; changes are announced this far ahead so every
+// client receives them before the synced flip.
+const TEMPO_HOLD_MIN_MS = 10000;
+const TEMPO_HOLD_MAX_MS = 15000;
+const TEMPO_LEAD_MS = 500;
 
 // Reject WS upgrades whose Origin isn't ours, so other sites can't drive
 // our Durable Objects from their users' browsers (cost-shifting). The
@@ -81,6 +96,9 @@ export class Main extends Server {
   private winnerEndsAt: number | null = null;
   private winnerId: string | null = null;
   private phaseTimer: ReturnType<typeof setTimeout> | null = null;
+  private tempo: Tempo = 'normal';
+  private tempoEffectiveAt: number | null = null;
+  private tempoTimer: ReturnType<typeof setTimeout> | null = null;
   // Per-connection state, keyed by connection id.
   private playerState = new Map<
     string,
@@ -250,10 +268,50 @@ export class Main extends Server {
   private startJousting() {
     this.phase = 'jousting';
     this.readyEndsAt = null;
+    // Always start at normal, effective right at "GO", then begin the cycle.
+    this.tempo = 'normal';
+    this.tempoEffectiveAt = Date.now();
     this.broadcastState();
+    this.tempoTimer = setTimeout(() => this.applyNextTempo(), this.randTempoHold());
     // A solo room (or one already down to a single player) resolves at once
     // rather than hanging in jousting forever.
     this.checkWinCondition();
+  }
+
+  private randTempoHold(): number {
+    return (
+      TEMPO_HOLD_MIN_MS + Math.random() * (TEMPO_HOLD_MAX_MS - TEMPO_HOLD_MIN_MS)
+    );
+  }
+
+  // Next tempo: from normal, shift to fast or slow; from a shift, usually
+  // settle back to normal, occasionally jump to the other extreme for variety.
+  // Never repeats the current tempo, so every change is audible.
+  private pickNextTempo(current: Tempo): Tempo {
+    if (current === 'normal') return Math.random() < 0.5 ? 'fast' : 'slow';
+    if (Math.random() < 0.7) return 'normal';
+    return current === 'fast' ? 'slow' : 'fast';
+  }
+
+  private applyNextTempo() {
+    if (this.phase !== 'jousting') return;
+    this.tempo = this.pickNextTempo(this.tempo);
+    // Announce slightly ahead so every client can schedule the synced flip.
+    this.tempoEffectiveAt = Date.now() + TEMPO_LEAD_MS;
+    this.broadcastState();
+    this.tempoTimer = setTimeout(
+      () => this.applyNextTempo(),
+      TEMPO_LEAD_MS + this.randTempoHold(),
+    );
+  }
+
+  private stopTempo() {
+    if (this.tempoTimer) {
+      clearTimeout(this.tempoTimer);
+      this.tempoTimer = null;
+    }
+    this.tempo = 'normal';
+    this.tempoEffectiveAt = null;
   }
 
   private checkWinCondition() {
@@ -261,6 +319,7 @@ export class Main extends Server {
     const alive = this.currentPlayers().filter((p) => !p.eliminated);
     if (alive.length > 1) return;
 
+    this.stopTempo();
     this.phase = 'winner';
     this.winnerId = alive[0]?.id ?? null;
     this.readyEndsAt = null;
@@ -275,6 +334,7 @@ export class Main extends Server {
       clearTimeout(this.phaseTimer);
       this.phaseTimer = null;
     }
+    this.stopTempo();
     this.phase = 'lobby';
     this.readyEndsAt = null;
     this.winnerEndsAt = null;
@@ -294,6 +354,8 @@ export class Main extends Server {
       readyEndsAt: this.readyEndsAt,
       winnerEndsAt: this.winnerEndsAt,
       winnerId: this.winnerId,
+      tempo: this.tempo,
+      tempoEffectiveAt: this.tempoEffectiveAt,
       players: this.currentPlayers(),
     };
     this.broadcast(JSON.stringify(message));
