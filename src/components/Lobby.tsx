@@ -87,7 +87,7 @@ function IdleLobby({ onEnter }: { onEnter: (code: string) => void }) {
         onClick={() => onEnter(generateRoomCode())}
         className="w-full rounded-full bg-go px-6 py-3 text-base font-semibold text-paper shadow-lg shadow-go/20 active:scale-95 transition"
       >
-        Create room
+        Create group
       </button>
 
       <div className="flex items-center gap-2 text-xs text-ink-faint">
@@ -109,7 +109,7 @@ function IdleLobby({ onEnter }: { onEnter: (code: string) => void }) {
           autoCapitalize="characters"
           autoCorrect="off"
           spellCheck={false}
-          placeholder="ROOM CODE"
+          placeholder="GROUP CODE"
           value={joinCode}
           onChange={(e) => setJoinCode(e.target.value)}
           maxLength={8}
@@ -328,7 +328,7 @@ function Room({ code, onLeave }: { code: string; onLeave: () => void }) {
     <div className="w-full max-w-sm rounded-2xl border border-line bg-paper-raised/80 p-5 flex flex-col gap-4">
       <div className="flex items-baseline justify-between">
         <h2 className="text-sm font-semibold uppercase tracking-wider text-ink-muted">
-          Room
+          Group
         </h2>
         <StatusBadge status={status} />
       </div>
@@ -403,7 +403,7 @@ function Room({ code, onLeave }: { code: string; onLeave: () => void }) {
                     </form>
                   ) : (
                     <>
-                      <span className="flex-1 truncate text-ink">
+                      <span className="min-w-0 flex-1 truncate text-ink">
                         {p.name}
                       </span>
                       {p.away && (
@@ -419,7 +419,7 @@ function Room({ code, onLeave }: { code: string; onLeave: () => void }) {
                           <button
                             type="button"
                             onClick={startEditing}
-                            className="shrink-0 text-xs text-ink-muted underline-offset-2 hover:underline"
+                            className="shrink-0 rounded-md border border-line px-2 py-1 text-xs font-medium text-ink-muted active:scale-95 transition"
                           >
                             Rename
                           </button>
@@ -434,15 +434,15 @@ function Room({ code, onLeave }: { code: string; onLeave: () => void }) {
         )}
       </div>
 
-      <label className="flex items-center gap-2.5 rounded-xl border border-line bg-paper px-4 py-3 text-sm font-medium text-ink">
-        <input
-          type="checkbox"
-          checked={me?.ready ?? false}
-          onChange={(e) => onToggleReady(e.target.checked)}
-          className="h-4 w-4 accent-go"
-        />
-        I'm ready
-      </label>
+      <button
+        type="button"
+        onClick={() => onToggleReady(!(me?.ready ?? false))}
+        className={`w-full rounded-full px-6 py-4 text-lg font-semibold text-paper shadow-lg active:scale-95 transition ${
+          me?.ready ? 'bg-go shadow-go/25' : 'bg-eliminated shadow-eliminated/25'
+        }`}
+      >
+        {me?.ready ? 'Ready ✓' : "I'm ready"}
+      </button>
 
       {(detector.permissionState === 'denied' ||
         detector.permissionState === 'unavailable') && (
