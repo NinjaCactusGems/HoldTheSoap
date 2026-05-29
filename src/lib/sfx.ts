@@ -18,24 +18,29 @@ function getCtx(): AudioContext | null {
   return ctx;
 }
 
+// Short melodic blip per reaction — distinct enough to tell apart by ear, all
+// played on every device when any player taps a smiley.
+const REACTION_NOTES: Record<
+  string,
+  { type: OscillatorType; freqs: number[]; step: number; dur: number; gain: number }
+> = {
+  turd: { type: 'triangle', freqs: [380, 240, 130], step: 0.05, dur: 0.12, gain: 0.28 }, // descending "blop"
+  heart: { type: 'sine', freqs: [523, 784], step: 0.1, dur: 0.18, gain: 0.26 }, // two soft rising notes
+  dancer: { type: 'square', freqs: [392, 523, 659], step: 0.06, dur: 0.1, gain: 0.16 }, // bouncy arpeggio up
+  dancerF: { type: 'sine', freqs: [587, 740, 988], step: 0.06, dur: 0.1, gain: 0.22 }, // brighter arpeggio up
+};
+
 export const sfx = {
-  // A harsh, descending screech for the moment you're eliminated ("you moved!").
-  // A detuned sawtooth swept downward with fast vibrato, mixed with a swept
-  // band-passed noise burst, all run through soft clipping for bite.
+  // The moment you're eliminated: a microphone yanked from the jack. Layers a
+  // sharp click (the plug pull), a low body thump, a feedback squeal that is
+  // hard-gated to silence mid-cry (rather than decaying), and an electrical
+  // static burst — the harsh layers run through soft clipping for bite.
   screech() {
     const ac = getCtx();
     if (!ac) return;
     const now = ac.currentTime;
-    const dur = 0.5;
 
-    // Master envelope: fast attack, exponential decay.
-    const master = ac.createGain();
-    master.gain.setValueAtTime(0.0001, now);
-    master.gain.exponentialRampToValueAtTime(0.6, now + 0.02);
-    master.gain.exponentialRampToValueAtTime(0.0001, now + dur);
-    master.connect(ac.destination);
-
-    // Soft clipper for harshness.
+    // Soft clipper + master, shared by the harsh layers.
     const shaper = ac.createWaveShaper();
     const n = 1024;
     const curve = new Float32Array(n);
@@ -44,44 +49,86 @@ export const sfx = {
       curve[i] = Math.tanh(3 * x);
     }
     shaper.curve = curve;
-    shaper.connect(master);
+    const master = ac.createGain();
+    master.gain.value = 0.7;
+    shaper.connect(master).connect(ac.destination);
 
-    // Descending sawtooth tone.
-    const osc = ac.createOscillator();
-    osc.type = 'sawtooth';
-    osc.frequency.setValueAtTime(1400, now);
-    osc.frequency.exponentialRampToValueAtTime(180, now + dur);
-    const oscGain = ac.createGain();
-    oscGain.gain.value = 0.5;
-    osc.connect(oscGain).connect(shaper);
+    // 1) Sharp click/pop transient — the physical plug-pull "thunk".
+    const click = ac.createOscillator();
+    click.type = 'square';
+    click.frequency.setValueAtTime(1800, now);
+    const clickGain = ac.createGain();
+    clickGain.gain.setValueAtTime(0.9, now);
+    clickGain.gain.exponentialRampToValueAtTime(0.0001, now + 0.012);
+    click.connect(clickGain).connect(shaper);
+    click.start(now);
+    click.stop(now + 0.02);
 
-    // Fast vibrato makes it "screech" rather than just sweep.
-    const lfo = ac.createOscillator();
-    lfo.frequency.value = 32;
-    const lfoGain = ac.createGain();
-    lfoGain.gain.value = 130;
-    lfo.connect(lfoGain).connect(osc.frequency);
+    // 2) Low body thump (kept round — bypasses the clipper).
+    const thump = ac.createOscillator();
+    thump.type = 'sine';
+    thump.frequency.setValueAtTime(150, now);
+    thump.frequency.exponentialRampToValueAtTime(40, now + 0.12);
+    const thumpGain = ac.createGain();
+    thumpGain.gain.setValueAtTime(0.0001, now);
+    thumpGain.gain.exponentialRampToValueAtTime(0.9, now + 0.005);
+    thumpGain.gain.exponentialRampToValueAtTime(0.0001, now + 0.16);
+    thump.connect(thumpGain).connect(master);
+    thump.start(now);
+    thump.stop(now + 0.18);
 
-    // Swept band-passed noise burst layered on top.
-    const noiseBuf = ac.createBuffer(1, Math.ceil(ac.sampleRate * dur), ac.sampleRate);
+    // 3) Feedback squeal that abruptly cuts to silence (gated), not decays.
+    const squealDur = 0.11;
+    const squeal = ac.createOscillator();
+    squeal.type = 'sawtooth';
+    squeal.frequency.setValueAtTime(3200, now);
+    squeal.frequency.linearRampToValueAtTime(3850, now + squealDur);
+    const squealGain = ac.createGain();
+    squealGain.gain.setValueAtTime(0.0001, now);
+    squealGain.gain.exponentialRampToValueAtTime(0.5, now + 0.01);
+    squealGain.gain.setValueAtTime(0.5, now + squealDur - 0.001); // hold full…
+    squealGain.gain.setValueAtTime(0.0001, now + squealDur); // …then hard cut
+    squeal.connect(squealGain).connect(shaper);
+    squeal.start(now);
+    squeal.stop(now + squealDur + 0.01);
+
+    // 4) Electrical static burst.
+    const noiseDur = 0.09;
+    const noiseBuf = ac.createBuffer(1, Math.ceil(ac.sampleRate * noiseDur), ac.sampleRate);
     const data = noiseBuf.getChannelData(0);
     for (let i = 0; i < data.length; i++) data[i] = Math.random() * 2 - 1;
     const noise = ac.createBufferSource();
     noise.buffer = noiseBuf;
-    const bp = ac.createBiquadFilter();
-    bp.type = 'bandpass';
-    bp.Q.value = 8;
-    bp.frequency.setValueAtTime(2600, now);
-    bp.frequency.exponentialRampToValueAtTime(500, now + dur);
+    const hp = ac.createBiquadFilter();
+    hp.type = 'highpass';
+    hp.frequency.value = 1200;
     const noiseGain = ac.createGain();
-    noiseGain.gain.value = 0.35;
-    noise.connect(bp).connect(noiseGain).connect(shaper);
-
-    osc.start(now);
-    lfo.start(now);
+    noiseGain.gain.setValueAtTime(0.5, now);
+    noiseGain.gain.exponentialRampToValueAtTime(0.0001, now + noiseDur);
+    noise.connect(hp).connect(noiseGain).connect(shaper);
     noise.start(now);
-    osc.stop(now + dur);
-    lfo.stop(now + dur);
-    noise.stop(now + dur);
+    noise.stop(now + noiseDur);
+  },
+
+  // A smiley tap: plays on every device (wired to the broadcast reaction event).
+  reaction(name: string) {
+    const spec = REACTION_NOTES[name];
+    if (!spec) return;
+    const ac = getCtx();
+    if (!ac) return;
+    const now = ac.currentTime;
+    spec.freqs.forEach((f, i) => {
+      const t0 = now + i * spec.step;
+      const osc = ac.createOscillator();
+      osc.type = spec.type;
+      osc.frequency.setValueAtTime(f, t0);
+      const g = ac.createGain();
+      g.gain.setValueAtTime(0.0001, t0);
+      g.gain.exponentialRampToValueAtTime(spec.gain, t0 + 0.01);
+      g.gain.exponentialRampToValueAtTime(0.0001, t0 + spec.dur);
+      osc.connect(g).connect(ac.destination);
+      osc.start(t0);
+      osc.stop(t0 + spec.dur + 0.02);
+    });
   },
 };

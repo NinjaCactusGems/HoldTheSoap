@@ -48,7 +48,7 @@ type ClientMessage =
   | { type: 'reaction'; reaction: Reaction }
   | { type: 'ping'; t: number };
 
-const MAX_PLAYERS_PER_ROOM = 16;
+const MAX_PLAYERS_PER_ROOM = 32;
 const MAX_NAME_LENGTH = 24;
 const READY_DURATION_MS = 5000;
 const WINNER_DURATION_MS = 10000;

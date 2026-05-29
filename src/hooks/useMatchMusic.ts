@@ -146,6 +146,15 @@ export function useMatchMusic(
     if (readyEndsAt == null || readyEndsAt === lastRoundRef.current) return;
     lastRoundRef.current = readyEndsAt;
 
+    // The "Get Ready" countdown has just begun (readyEndsAt is ~5s ahead).
+    // Silence anything still playing — e.g. the previous winner's looping
+    // track — so the countdown is quiet on every device, then begin() restarts
+    // everyone together at "GO".
+    cancelFadeRef.current?.();
+    if (!audio.paused) {
+      cancelFadeRef.current = fade(audio, 0, FADE_OUT_MS, () => audio.pause());
+    }
+
     const begin = () => {
       startTimerRef.current = null;
       cancelFadeRef.current?.();
@@ -183,16 +192,18 @@ export function useMatchMusic(
     };
   }, [readyEndsAt, toLocalTime]);
 
-  // Mute the soundtrack for eliminated players; restore when back in the round.
+  // Silence the soundtrack for this player the moment they're eliminated. We
+  // never fade it back up here: once you're out you stay silent for the rest of
+  // the round AND through resetToLobby() (which clears every `eliminated` flag,
+  // which used to make the whole room's music swell back in at match end). The
+  // next round's GO restart — begin() above — is the only thing that brings
+  // music back, and only for players who aren't eliminated at that point.
   useEffect(() => {
+    if (!eliminated) return;
     const audio = audioRef.current;
     if (!audio || audio.paused) return;
     cancelFadeRef.current?.();
-    cancelFadeRef.current = fade(
-      audio,
-      eliminated ? 0 : TARGET_VOLUME,
-      MUTE_FADE_MS,
-    );
+    cancelFadeRef.current = fade(audio, 0, MUTE_FADE_MS);
   }, [eliminated]);
 
   // Shift the playback rate in lockstep with the room when the tempo changes.

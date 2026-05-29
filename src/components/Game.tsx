@@ -258,6 +258,7 @@ function ReactionParticles({
   const reaction = lastReaction?.reaction;
   useEffect(() => {
     if (!reaction) return;
+    sfx.reaction(reaction);
     const particle: Particle = {
       id: seqRef.current++,
       emoji: REACTION_EMOJI[reaction],
