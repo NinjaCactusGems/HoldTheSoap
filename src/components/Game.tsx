@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState, type ReactNode } from 'react';
-import { MusicNotes } from './MusicNotes';
+import { Bubbles } from './Bubbles';
 import { useI18n } from '../i18n/I18nContext';
 import { haptics } from '../lib/haptics';
 import { sfx } from '../lib/sfx';
@@ -97,7 +97,7 @@ function ReadyView({
   }, [localEndsAt]);
 
   return (
-    <div className="fixed inset-0 z-50 flex flex-col items-center justify-center gap-6 bg-staff text-ink">
+    <div className="fixed inset-0 z-50 flex flex-col items-center justify-center gap-6 bg-sky text-ink">
       <div className="text-sm font-semibold uppercase tracking-[0.3em] text-ink-muted">
         {t('game.getReady')}
       </div>
@@ -154,23 +154,26 @@ function HoldingView({
 
   return (
     <div
-      className={`fixed inset-0 z-50 flex flex-col items-center justify-center text-paper transition-colors duration-300 ${
-        iAmOut ? 'bg-eliminated' : 'bg-olive'
+      className={`fixed inset-0 z-50 flex flex-col items-center justify-center transition-colors duration-300 ${
+        iAmOut ? 'bg-dropped text-ink' : 'bg-hold text-white'
       }`}
     >
-      <MusicNotes />
+      <Bubbles />
       {iAmOut ? (
-        <div className="relative z-10 flex flex-col items-center gap-3">
-          <div className="font-serif text-8xl font-bold tracking-tight">
-            {t('game.out')}
+        <div className="relative z-10 flex flex-col items-center gap-4 px-6 text-center">
+          <div className="text-7xl" aria-hidden="true">
+            😟
           </div>
-          <div className="text-sm uppercase tracking-[0.3em] text-paper/80">
+          <div className="font-round text-3xl sm:text-4xl font-bold tracking-tight">
+            {t('game.droppedSoap')}
+          </div>
+          <div className="text-sm uppercase tracking-[0.3em] text-ink-muted">
             {t('game.stillIn', { count: aliveCount })}
           </div>
         </div>
       ) : (
-        <div className="relative z-10 text-sm font-semibold uppercase tracking-[0.4em] text-paper/70">
-          {t('game.holdStill')}
+        <div className="relative z-10 font-round text-8xl font-bold tracking-tight">
+          {t('game.hold')}
         </div>
       )}
     </div>
@@ -256,7 +259,7 @@ function WinnerView({
 
   if (postGame) {
     return (
-      <div className="fixed inset-0 z-50 flex flex-col overflow-hidden bg-staff text-ink">
+      <div className="fixed inset-0 z-50 flex flex-col overflow-hidden bg-sky text-ink">
         <ReactionParticles lastReaction={lastReaction} />
         <div className="flex shrink-0 flex-col items-center gap-4 px-6 pt-10 pb-4">
           {/* Once the lobby has slid up, the winner banner fades away so the
@@ -274,7 +277,7 @@ function WinnerView({
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex flex-col items-center justify-center gap-8 bg-staff text-ink">
+    <div className="fixed inset-0 z-50 flex flex-col items-center justify-center gap-8 bg-sky text-ink">
       <ReactionParticles lastReaction={lastReaction} />
       {header}
       {smileys}

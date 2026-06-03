@@ -31,9 +31,11 @@ const I18nContext = createContext<I18nContextValue | null>(null);
 export function I18nProvider({ children }: { children: ReactNode }) {
   const [locale, setLocaleState] = useState<Locale>(detectLocale);
 
-  // Keep <html lang> in sync for accessibility and correct hyphenation.
+  // Keep <html lang> in sync for accessibility and correct hyphenation, and
+  // localize the browser tab title alongside it.
   useEffect(() => {
     document.documentElement.lang = locale;
+    document.title = dict[locale]['app.title'];
   }, [locale]);
 
   const setLocale = useCallback((next: Locale) => {

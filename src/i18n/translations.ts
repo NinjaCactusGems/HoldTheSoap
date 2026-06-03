@@ -4,6 +4,8 @@
 // fragments in ./richText instead.
 
 export const en = {
+  'app.title': 'HOLD THE SOAP',
+
   'howToPlay.title': 'How to play',
   'howToPlay.intro':
     'HOLD THE SOAP is a game of movement and balance — played in the real world, phone in hand.',
@@ -43,6 +45,8 @@ export const en = {
   'game.go': 'GO!',
   'game.holdStillEllipsis': 'Hold still…',
   'game.holdStill': 'Hold still',
+  'game.hold': 'HOLD',
+  'game.droppedSoap': 'You dropped the soap',
   'game.out': 'OUT',
   'game.stillIn': '{count} still in',
   'game.youWin': 'You win!',
@@ -55,6 +59,8 @@ export const en = {
 export type TranslationKey = keyof typeof en;
 
 export const de: Record<TranslationKey, string> = {
+  'app.title': 'Halte die Seife',
+
   'howToPlay.title': 'Spielanleitung',
   'howToPlay.intro':
     'HOLD THE SOAP ist ein Bewegungs- und Balance-Spiel, gespielt in der echten Welt mit dem Handy in der Hand.',
@@ -94,6 +100,8 @@ export const de: Record<TranslationKey, string> = {
   'game.go': 'LOS!',
   'game.holdStillEllipsis': 'Stillhalten…',
   'game.holdStill': 'Stillhalten',
+  'game.hold': 'HALTEN',
+  'game.droppedSoap': 'Du hast die Seife fallen lassen',
   'game.out': 'RAUS',
   'game.stillIn': 'noch {count} dabei',
   'game.youWin': 'Du gewinnst!',
