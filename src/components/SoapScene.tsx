@@ -11,6 +11,8 @@ import {
   Clock,
   Color,
   MathUtils,
+  Box3,
+  Vector3,
 } from 'three';
 import { RoomEnvironment } from 'three/examples/jsm/environments/RoomEnvironment.js';
 import { makeSoapGeometry, makeStampTexture } from '../lib/soap';
@@ -58,9 +60,6 @@ export default function SoapScene({ magnitude }: { magnitude: number }) {
     scene.add(glint);
 
     const geometry = makeSoapGeometry();
-    geometry.computeBoundingSphere();
-    const radius = geometry.boundingSphere?.radius ?? 1;
-
     const bump = makeStampTexture();
     const material = new MeshPhysicalMaterial({
       color: new Color('#ffd9ec'),
@@ -86,18 +85,30 @@ export default function SoapScene({ magnitude }: { magnitude: number }) {
     const soap = new Mesh(geometry, material);
     scene.add(soap);
 
-    // Lay the bar so its stamped top face tilts toward the camera.
-    const baseRotX = -Math.PI / 2 + 0.42;
-    const baseRotZ = 0.06;
+    // Rest pose: the stamped broad face turned toward the camera, tilted back a
+    // little so the bar's thickness reads. The animation loop nudges around this.
+    const baseRotX = Math.PI / 2 - 0.3;
+    const baseRotZ = 0.05;
 
-    // Scale the bar to fill the smaller viewport dimension (so it reads
-    // "screen-sized" in portrait and landscape alike).
+    // Measure the bar's actual projected size at unit scale, then "contain" it
+    // inside the camera frustum with a margin. This keeps the whole bar on
+    // screen and centred in any aspect ratio (portrait or landscape).
+    const fitBox = new Box3();
+    const fitSize = new Vector3();
+    let baseScale = 1;
     function fit() {
       const vFOV = MathUtils.degToRad(camera.fov);
       const visH = 2 * Math.tan(vFOV / 2) * camera.position.z;
       const visW = visH * camera.aspect;
-      const target = Math.min(visW, visH) * 0.95;
-      soap.scale.setScalar(target / (2 * radius));
+      soap.position.set(0, 0, 0);
+      soap.rotation.set(baseRotX, 0, baseRotZ);
+      soap.scale.setScalar(1);
+      soap.updateMatrixWorld(true);
+      fitBox.setFromObject(soap);
+      fitBox.getSize(fitSize);
+      const fill = 0.9;
+      baseScale = Math.min((visW * fill) / fitSize.x, (visH * fill) / fitSize.y);
+      soap.scale.setScalar(baseScale);
     }
     fit();
 
@@ -116,23 +127,23 @@ export default function SoapScene({ magnitude }: { magnitude: number }) {
         : 0;
       tremble += (intensity - tremble) * 0.08;
 
-      const idleRotY = animated ? Math.sin(t * 0.4) * 0.28 : 0.18;
-      const idleBob = animated ? Math.sin(t * 0.9) * 0.05 : 0;
+      // Gentle idle sway (kept small so it stays within the fitted margin), plus
+      // a tremble that grows with movement.
+      const idleRotY = animated ? Math.sin(t * 0.4) * 0.12 : 0.08;
+      const idleBob = animated ? Math.sin(t * 0.9) * 0.03 : 0;
       const jitter = animated
-        ? Math.sin(t * 34) * 0.06 * tremble + (Math.random() - 0.5) * 0.12 * tremble
+        ? Math.sin(t * 34) * 0.05 * tremble + (Math.random() - 0.5) * 0.1 * tremble
         : 0;
 
-      soap.rotation.x = baseRotX + jitter * 0.6;
+      soap.rotation.x = baseRotX + jitter * 0.5;
       soap.rotation.y = idleRotY + jitter;
       soap.rotation.z = baseRotZ + jitter * 0.4;
       soap.position.y = idleBob;
-      soap.position.x = animated ? Math.sin(t * 19) * 0.12 * tremble : 0;
+      soap.position.x = animated ? Math.sin(t * 19) * 0.1 * tremble : 0;
 
-      // Squash-stretch pulse grows with the tremble. scale.x holds the fitted
-      // base (only fit()/resize touch it), so modulate y around it each frame.
+      // Squash-stretch pulse around the fitted base scale, growing with tremble.
       const squash = animated ? 1 + Math.sin(t * 26) * 0.04 * tremble : 1;
-      const s = soap.scale.x;
-      soap.scale.set(s, s * squash, s);
+      soap.scale.set(baseScale, baseScale * squash, baseScale);
 
       glint.position.set(Math.cos(t * 0.7) * 4, 2 + Math.sin(t * 0.5) * 1.5, 4);
 
