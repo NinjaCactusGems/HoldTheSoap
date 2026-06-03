@@ -1,16 +1,11 @@
 // Procedural soap-bar assets, generated entirely in code (no model/image files).
 //
 // `makeSoapGeometry` builds a superellipsoid — a rounded "pillow" — which is the
-// classic bar-of-soap silhouette. `makeStampTexture` paints a canvas with a
-// debossed "HOLD THE SOAP" brand plus fine grain, used as a bump map so the
-// surface reads as real stamped soap.
+// classic bar-of-soap silhouette. `makeStampNormalMap` paints a height field
+// (debossed "HOLD THE SOAP" brand + fine grain) and converts it to a tangent-
+// space normal map, so the engraving reads even through a glossy clearcoat.
 
-import {
-  BufferGeometry,
-  BufferAttribute,
-  CanvasTexture,
-  SRGBColorSpace,
-} from 'three';
+import { BufferGeometry, BufferAttribute, CanvasTexture } from 'three';
 
 /** Signed power: keeps the sign while raising |v| to an exponent. */
 function spow(v: number, p: number): number {
@@ -24,8 +19,8 @@ function spow(v: number, p: number): number {
  */
 export function makeSoapGeometry(
   halfX = 1.0,
-  halfY = 0.32,
-  halfZ = 0.62,
+  halfY = 0.36,
+  halfZ = 0.78,
   roundness = 0.35,
   segU = 160,
   segV = 96,
@@ -96,41 +91,58 @@ function paintGrain(ctx: CanvasRenderingContext2D, w: number, h: number): void {
 }
 
 /**
- * A bump map: mid-grey base (no displacement), darker debossed brand text, and
- * faint grain. Wrapped so the brand reads on the broad faces of the bar.
+ * A tangent-space normal map for the soap surface: a height field with the
+ * "HOLD THE SOAP" brand debossed (darker = recessed) plus faint grain, converted
+ * to normals via finite differences. Applied as both normalMap and
+ * clearcoatNormalMap so the engraving survives the glossy top coat.
  */
-export function makeStampTexture(): CanvasTexture {
+export function makeStampNormalMap(): CanvasTexture {
   const w = 1024;
   const h = 512;
-  const canvas = document.createElement('canvas');
-  canvas.width = w;
-  canvas.height = h;
-  const ctx = canvas.getContext('2d')!;
 
-  // Neutral mid-grey = flat surface for a bump map.
-  ctx.fillStyle = '#808080';
-  ctx.fillRect(0, 0, w, h);
+  // 1) Height field: mid-grey base, faint grain, recessed (dark) brand text.
+  const height = document.createElement('canvas');
+  height.width = w;
+  height.height = h;
+  const hctx = height.getContext('2d')!;
+  hctx.fillStyle = '#808080';
+  hctx.fillRect(0, 0, w, h);
+  paintGrain(hctx, w, h);
+  hctx.textAlign = 'center';
+  hctx.textBaseline = 'middle';
+  hctx.font = '700 160px "Fredoka", ui-rounded, system-ui, sans-serif';
+  hctx.fillStyle = '#1c1c1c'; // dark = deep recess
+  hctx.fillText('HOLD', w / 2, h / 2 - 92);
+  hctx.fillText('THE SOAP', w / 2, h / 2 + 92);
 
-  paintGrain(ctx, w, h);
+  // 2) Convert the height field to a normal map (finite-difference gradient).
+  const src = hctx.getImageData(0, 0, w, h).data;
+  const out = new ImageData(w, h);
+  const strength = 2.5;
+  const at = (x: number, y: number) => {
+    const cx = x < 0 ? 0 : x >= w ? w - 1 : x;
+    const cy = y < 0 ? 0 : y >= h ? h - 1 : y;
+    return src[(cy * w + cx) * 4] / 255; // red channel as height
+  };
+  for (let y = 0; y < h; y++) {
+    for (let x = 0; x < w; x++) {
+      const nx = (at(x - 1, y) - at(x + 1, y)) * strength;
+      const ny = (at(x, y - 1) - at(x, y + 1)) * strength;
+      const inv = 1 / Math.hypot(nx, ny, 1);
+      const i = (y * w + x) * 4;
+      out.data[i] = (nx * inv * 0.5 + 0.5) * 255;
+      out.data[i + 1] = (ny * inv * 0.5 + 0.5) * 255;
+      out.data[i + 2] = (inv * 0.5 + 0.5) * 255;
+      out.data[i + 3] = 255;
+    }
+  }
 
-  // Debossed brand: darker text = recessed. A soft light halo above sells the
-  // bevel. Rounded system font to match the app's Fredoka vibe.
-  ctx.textAlign = 'center';
-  ctx.textBaseline = 'middle';
-  const font = '700 96px "Fredoka", ui-rounded, system-ui, sans-serif';
+  const normal = document.createElement('canvas');
+  normal.width = w;
+  normal.height = h;
+  normal.getContext('2d')!.putImageData(out, 0, 0);
 
-  ctx.font = font;
-  // light bevel highlight, nudged up-left
-  ctx.fillStyle = 'rgba(255,255,255,0.55)';
-  ctx.fillText('HOLD', w / 2 - 2, h / 2 - 60 - 2);
-  ctx.fillText('THE SOAP', w / 2 - 2, h / 2 + 60 - 2);
-  // recessed dark body
-  ctx.fillStyle = 'rgba(40,40,40,0.95)';
-  ctx.fillText('HOLD', w / 2, h / 2 - 60);
-  ctx.fillText('THE SOAP', w / 2, h / 2 + 60);
-
-  const tex = new CanvasTexture(canvas);
-  tex.colorSpace = SRGBColorSpace;
+  const tex = new CanvasTexture(normal);
   tex.anisotropy = 4;
-  return tex;
+  return tex; // linear data — must NOT be tagged sRGB
 }

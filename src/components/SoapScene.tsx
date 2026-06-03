@@ -12,10 +12,11 @@ import {
   Color,
   MathUtils,
   Box3,
+  Vector2,
   Vector3,
 } from 'three';
 import { RoomEnvironment } from 'three/examples/jsm/environments/RoomEnvironment.js';
-import { makeSoapGeometry, makeStampTexture } from '../lib/soap';
+import { makeSoapGeometry, makeStampNormalMap } from '../lib/soap';
 
 /**
  * A full-screen, procedurally-generated 3D bar of soap (see ../lib/soap). Glossy
@@ -63,25 +64,29 @@ export default function SoapScene({ magnitude }: { magnitude: number }) {
     scene.add(glint);
 
     const geometry = makeSoapGeometry();
-    const bump = makeStampTexture();
+    const normalTex = makeStampNormalMap();
     const material = new MeshPhysicalMaterial({
       color: new Color('#ffd9ec'),
-      roughness: 0.18,
+      roughness: 0.28,
       metalness: 0,
-      transmission: 0.65,
-      thickness: 1.2,
+      transmission: 0.5,
+      thickness: 1,
       ior: 1.4,
-      clearcoat: 1,
+      clearcoat: 0.6,
       clearcoatRoughness: 0.25,
-      iridescence: 0.35,
+      iridescence: 0.2,
       iridescenceIOR: 1.3,
       attenuationColor: new Color('#ff9ccb'),
       attenuationDistance: 2.5,
       sheen: 0.5,
       sheenColor: new Color('#ffffff'),
-      envMapIntensity: 1.4,
-      bumpMap: bump,
-      bumpScale: 0.6,
+      envMapIntensity: 1.3,
+      // Engraving lives in the normal map; applied to the base surface and the
+      // clearcoat so it stays visible through the gloss.
+      normalMap: normalTex,
+      normalScale: new Vector2(1, 1),
+      clearcoatNormalMap: normalTex,
+      clearcoatNormalScale: new Vector2(0.8, 0.8),
       transparent: true,
     });
 
@@ -91,7 +96,7 @@ export default function SoapScene({ magnitude }: { magnitude: number }) {
     // Rest pose: the stamped broad face turned toward the camera, tilted back a
     // little so the bar's thickness reads. The animation loop nudges around this.
     const baseRotX = Math.PI / 2 - 0.3;
-    const baseRotZ = 0.05;
+    const baseRotZ = -0.4; // diagonal tilt — more presence, fills more height
 
     // Measure the bar's actual projected size at unit scale, then "contain" it
     // inside the camera frustum with a margin. This keeps the whole bar on
@@ -109,7 +114,7 @@ export default function SoapScene({ magnitude }: { magnitude: number }) {
       soap.updateMatrixWorld(true);
       fitBox.setFromObject(soap);
       fitBox.getSize(fitSize);
-      const fill = 0.9;
+      const fill = 0.96;
       baseScale = Math.min((visW * fill) / fitSize.x, (visH * fill) / fitSize.y);
       soap.scale.setScalar(baseScale);
     }
@@ -206,7 +211,7 @@ export default function SoapScene({ magnitude }: { magnitude: number }) {
       reduceMotion.removeEventListener('change', onMotionPrefChange);
       geometry.dispose();
       material.dispose();
-      bump.dispose();
+      normalTex.dispose();
       envRT.dispose();
       pmrem.dispose();
       renderer.dispose();
