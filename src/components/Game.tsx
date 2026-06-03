@@ -1,5 +1,44 @@
-import { useEffect, useRef, useState, type ReactNode } from 'react';
+import {
+  Component,
+  lazy,
+  Suspense,
+  useEffect,
+  useRef,
+  useState,
+  type ReactNode,
+} from 'react';
 import { Bubbles } from './Bubbles';
+
+// three.js + the soap scene live in their own lazy chunk, loaded only when an
+// alive player enters the hold phase — it never weighs down the initial bundle.
+const SoapScene = lazy(() => import('./SoapScene'));
+
+// Probe WebGL once; if unavailable we fall back to the flat pink background.
+let webglMemo: boolean | null = null;
+function webglAvailable(): boolean {
+  if (webglMemo !== null) return webglMemo;
+  try {
+    const c = document.createElement('canvas');
+    webglMemo = !!(
+      window.WebGLRenderingContext &&
+      (c.getContext('webgl') || c.getContext('experimental-webgl'))
+    );
+  } catch {
+    webglMemo = false;
+  }
+  return webglMemo;
+}
+
+// If the scene (or its chunk) ever throws, drop silently to the pink fallback.
+class SoapBoundary extends Component<{ children: ReactNode }, { failed: boolean }> {
+  state = { failed: false };
+  static getDerivedStateFromError() {
+    return { failed: true };
+  }
+  render() {
+    return this.state.failed ? null : this.props.children;
+  }
+}
 import { useI18n } from '../i18n/I18nContext';
 import { haptics } from '../lib/haptics';
 import { sfx } from '../lib/sfx';
@@ -158,6 +197,15 @@ function HoldingView({
         iAmOut ? 'bg-dropped text-ink' : 'bg-hold text-white'
       }`}
     >
+      {/* Alive: a full-screen 3D bar of soap behind the foam, brand embossed in
+          the mesh. Falls back to the flat pink background if WebGL is missing. */}
+      {!iAmOut && webglAvailable() && (
+        <SoapBoundary>
+          <Suspense fallback={null}>
+            <SoapScene magnitude={detector.magnitude} />
+          </Suspense>
+        </SoapBoundary>
+      )}
       <Bubbles />
       {iAmOut ? (
         <div className="relative z-10 flex flex-col items-center gap-4 px-6 text-center">
@@ -172,7 +220,7 @@ function HoldingView({
           </div>
         </div>
       ) : (
-        <div className="relative z-10 font-round text-8xl font-bold tracking-tight">
+        <div className="pointer-events-none absolute inset-x-0 bottom-[9vh] z-10 text-center font-round text-2xl font-semibold uppercase tracking-[0.35em] text-white/75 [text-shadow:0_1px_8px_rgba(0,0,0,0.25)]">
           {t('game.hold')}
         </div>
       )}
