@@ -67,24 +67,25 @@ export default function SoapScene({ magnitude }: { magnitude: number }) {
     const { colorMap, normalMap } = makeSoapTextures();
     const material = new MeshPhysicalMaterial({
       color: new Color('#ffd9ec'),
-      // Colour map tints the recessed "Hold Me" darker so it always reads.
+      // Colour map tints the recessed "HOLD ME" darker so it always reads.
       map: colorMap,
-      roughness: 0.3,
+      // Higher roughness + light clearcoat = a softer, more matte soap finish.
+      roughness: 0.45,
       metalness: 0,
       // Modest transmission keeps a glycerin glow without the back-face
       // engraving ghosting through (which read mirrored when set high).
       transmission: 0.25,
       thickness: 0.6,
       ior: 1.4,
-      clearcoat: 0.6,
-      clearcoatRoughness: 0.3,
-      iridescence: 0.25,
+      clearcoat: 0.3,
+      clearcoatRoughness: 0.4,
+      iridescence: 0.12,
       iridescenceIOR: 1.3,
       attenuationColor: new Color('#ff9ccb'),
       attenuationDistance: 1.5,
-      sheen: 0.5,
+      sheen: 0.4,
       sheenColor: new Color('#ffffff'),
-      envMapIntensity: 1.3,
+      envMapIntensity: 1.05,
       // Normal map adds the engraved bevel on top of the colour recess, on both
       // the base surface and the clearcoat so it survives the gloss.
       normalMap: normalMap,

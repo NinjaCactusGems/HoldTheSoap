@@ -57,10 +57,10 @@ export function makeSoapGeometry(
       positions[p++] = halfY * ny;
       positions[p++] = halfZ * nz;
       // Planar top-down (XZ) projection, so the stamp lies flat and readable on
-      // the broad top face; the thin side walls just get vertical streaks. U is
-      // negated so the brand reads the right way round on the camera-facing face.
-      uvs[t++] = -nx * 0.5 + 0.5;
-      uvs[t++] = nz * 0.5 + 0.5;
+      // the broad top face; the thin side walls just get vertical streaks. V is
+      // negated so the brand reads upright on the camera-facing face.
+      uvs[t++] = nx * 0.5 + 0.5;
+      uvs[t++] = -nz * 0.5 + 0.5;
     }
   }
 
