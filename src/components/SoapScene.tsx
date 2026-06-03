@@ -40,7 +40,10 @@ export default function SoapScene({ magnitude }: { magnitude: number }) {
 
     const renderer = new WebGLRenderer({ canvas, antialias: true, alpha: true });
     renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
-    renderer.setSize(width, height, false);
+    // updateStyle=true (default): three sets the canvas CSS size to the viewport.
+    // Without it a <canvas> falls back to its buffer pixel size (replaced
+    // element), rendering ~2x too big and pinned to the top-left.
+    renderer.setSize(width, height);
 
     const scene = new Scene();
     const camera = new PerspectiveCamera(35, width / height, 0.1, 100);
@@ -171,7 +174,7 @@ export default function SoapScene({ magnitude }: { magnitude: number }) {
       width = window.innerWidth;
       height = window.innerHeight;
       renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
-      renderer.setSize(width, height, false);
+      renderer.setSize(width, height);
       camera.aspect = width / height;
       camera.updateProjectionMatrix();
       fit();
