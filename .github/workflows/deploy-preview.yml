@@ -45,7 +45,7 @@ jobs:
             echo "value=" >> "$GITHUB_OUTPUT"
             exit 0
           fi
-          echo "value=joust-party.${SUB}.workers.dev" >> "$GITHUB_OUTPUT"
+          echo "value=holdthesoap-party.${SUB}.workers.dev" >> "$GITHUB_OUTPUT"
 
       - run: npm run build
         env:
@@ -57,7 +57,7 @@ jobs:
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_KEY }}
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          command: pages deploy ./dist --project-name=joust --branch=${{ github.head_ref }}
+          command: pages deploy ./dist --project-name=holdthesoap --branch=${{ github.head_ref }}
 
       - name: Comment preview URL on PR
         uses: marocchino/sticky-pull-request-comment@v2

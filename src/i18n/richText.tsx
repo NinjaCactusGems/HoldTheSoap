@@ -26,7 +26,7 @@ export const howToPlayRules: Record<Locale, (() => ReactNode)[]> = {
     ),
     () => (
       <>
-        Be the <strong>last one standing</strong> to win the joust.
+        Be the <strong>last one standing</strong> to win the round.
       </>
     ),
   ],

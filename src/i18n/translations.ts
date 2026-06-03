@@ -6,7 +6,7 @@
 export const en = {
   'howToPlay.title': 'How to play',
   'howToPlay.intro':
-    'Joust is a game of movement and balance — played in the real world, phone in hand.',
+    'HOLD THE SOAP is a game of movement and balance — played in the real world, phone in hand.',
 
   'lobby.create': 'Create group',
   'lobby.or': 'or',
@@ -30,7 +30,7 @@ export const en = {
   'room.teamSolo': 'No team (solo)',
   'room.needTeams': 'Need at least two sides',
   'room.motionWarning':
-    "Motion sensing is off, so you can't be eliminated. Open joust.ninja-cactus.com on a phone for the full game.",
+    "Motion sensing is off, so you can't be eliminated. Open holdthesoap.com on a phone for the full game.",
   'room.startMatch': 'Start match',
   'room.waitingEveryone': 'Waiting for everyone…',
   'room.leave': 'Leave',
@@ -57,7 +57,7 @@ export type TranslationKey = keyof typeof en;
 export const de: Record<TranslationKey, string> = {
   'howToPlay.title': 'Spielanleitung',
   'howToPlay.intro':
-    'Joust ist ein Bewegungs- und Balance-Spiel, gespielt in der echten Welt mit dem Handy in der Hand.',
+    'HOLD THE SOAP ist ein Bewegungs- und Balance-Spiel, gespielt in der echten Welt mit dem Handy in der Hand.',
 
   'lobby.create': 'Gruppe erstellen',
   'lobby.or': 'oder',
@@ -81,7 +81,7 @@ export const de: Record<TranslationKey, string> = {
   'room.teamSolo': 'Kein Team (allein)',
   'room.needTeams': 'Mindestens zwei Seiten nötig',
   'room.motionWarning':
-    'Die Bewegungserkennung ist aus, du kannst also nicht ausscheiden. Öffne joust.ninja-cactus.com auf einem Handy für das volle Spiel.',
+    'Die Bewegungserkennung ist aus, du kannst also nicht ausscheiden. Öffne holdthesoap.com auf einem Handy für das volle Spiel.',
   'room.startMatch': 'Spiel starten',
   'room.waitingEveryone': 'Warte auf alle…',
   'room.leave': 'Verlassen',

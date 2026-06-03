@@ -59,7 +59,7 @@ function fade(
  * Plays the match soundtrack, looping.
  *
  * Playback begins exactly when the "Get Ready" countdown hits zero — i.e. at
- * `readyEndsAt`, the server-authoritative moment jousting starts / "GO". The
+ * `readyEndsAt`, the server-authoritative moment the hold phase starts / "GO". The
  * server broadcasts that timestamp ~5s ahead of time; `toLocalTime` (from
  * useServerClock) converts it into this client's clock so every device in the
  * room starts at the same real instant, irrespective of clock skew.

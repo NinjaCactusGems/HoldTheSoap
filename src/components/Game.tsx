@@ -6,7 +6,7 @@ import { sfx } from '../lib/sfx';
 import { teamById, type TeamId } from '../lib/teams';
 import type { useShakeDetector } from '../hooks/useShakeDetector';
 
-export type Phase = 'lobby' | 'ready' | 'jousting' | 'winner';
+export type Phase = 'lobby' | 'ready' | 'holding' | 'winner';
 export type Reaction = 'turd' | 'heart' | 'dancer' | 'dancerF';
 export type Player = {
   id: string;
@@ -52,13 +52,13 @@ export function Game(props: GameProps) {
     return (
       <ReadyView readyEndsAt={props.readyEndsAt} toLocalTime={props.toLocalTime} />
     );
-  if (phase === 'jousting') return <JoustingView {...props} />;
+  if (phase === 'holding') return <HoldingView {...props} />;
   return <WinnerView {...props} />;
 }
 
 // Get Ready: a synced countdown on the neutral staff background. A small tick
-// each second, a larger buzz on "Go". The server flips everyone to jousting
-// when the timer ends.
+// each second, a larger buzz on "Go". The server flips everyone to the hold
+// phase when the timer ends.
 function ReadyView({
   readyEndsAt,
   toLocalTime,
@@ -77,8 +77,8 @@ function ReadyView({
 
   // Tracks the last second we buzzed for, so each boundary fires its haptic
   // exactly once (the 200ms interval visits each second multiple times). The
-  // "Go" buzz is fired by JoustingView on mount instead — the countdown
-  // reaching 0 here races the server's jousting message and is unreliable.
+  // "Go" buzz is fired by HoldingView on mount instead — the countdown
+  // reaching 0 here races the server's hold-phase message and is unreliable.
   const lastTickRef = useRef<number | null>(null);
 
   useEffect(() => {
@@ -115,10 +115,10 @@ function ReadyView({
   );
 }
 
-// Jousting: hold still. A motion spike above the Normal threshold (wired in
+// Holding: hold still. A motion spike above the Normal threshold (wired in
 // Room as useShakeDetector(7)) reports elimination to the server. Full-screen
 // olive while you're in, red the moment you're out — readable across a room.
-function JoustingView({
+function HoldingView({
   players,
   myId,
   detector,
@@ -129,13 +129,13 @@ function JoustingView({
   const iAmOut = me?.eliminated ?? false;
 
   // lastShakeAt persists across phases, so ignore any spike from before
-  // jousting began. Set the gate once when this view first mounts.
+  // the hold phase began. Set the gate once when this view first mounts.
   const startedAtRef = useRef<number>(Date.now());
   // Fire elimination at most once per round (the view remounts each round).
   const firedRef = useRef(false);
 
   // "Go" buzz: fired here (rather than at the countdown's racy 0) so it
-  // reliably lands exactly when jousting begins.
+  // reliably lands exactly when the hold phase begins.
   useEffect(() => {
     haptics.go();
   }, []);

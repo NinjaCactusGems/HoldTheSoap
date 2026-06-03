@@ -14,7 +14,7 @@ export default function App() {
             <LanguageSwitcher />
           </div>
           <h1 className="font-serif text-5xl sm:text-6xl font-semibold tracking-tight text-center">
-            Joust
+            HOLD THE SOAP
           </h1>
         </div>
 

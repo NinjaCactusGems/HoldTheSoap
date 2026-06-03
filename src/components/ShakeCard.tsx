@@ -61,7 +61,7 @@ function IdleView({
       {blocked && (
         <p className="text-sm text-accent text-center">
           Motion sensors aren&apos;t available or were denied. Open
-          joust.ninja-cactus.com on a phone.
+          holdthesoap.com on a phone.
         </p>
       )}
     </div>

@@ -1,4 +1,4 @@
-// Shared tempo model for the jousting "speed shifts".
+// Shared tempo model for the hold-phase "speed shifts".
 //
 // During a round the server occasionally shifts the tempo for everyone at once
 // (synced via the server clock). Each tempo has fixed, always-the-same targets:

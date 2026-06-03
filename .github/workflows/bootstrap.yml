@@ -5,14 +5,15 @@ name: Bootstrap Cloudflare
 # after a successful run, but harmless to leave in place.
 #
 # What it does:
-#   1. Creates the `joust` Cloudflare Pages project with main as the
+#   1. Creates the `holdthesoap` Cloudflare Pages project with main as the
 #      production branch (if it doesn't already exist).
-#   2. Attaches joust.ninja-cactus.com as a custom domain on that project
+#   2. Attaches holdthesoap.com as a custom domain on that project
 #      (if not already attached).
-#   3. Creates the CNAME record joust.ninja-cactus.com -> joust.pages.dev
-#      in the ninja-cactus.com zone. This step is required: only the
-#      Cloudflare dashboard's add-domain flow creates DNS automatically;
-#      the API endpoint used in step 2 does not.
+#   3. Creates the CNAME record holdthesoap.com -> holdthesoap.pages.dev
+#      at the apex of the holdthesoap.com zone (Cloudflare CNAME-flattens
+#      it). This step is required: only the Cloudflare dashboard's
+#      add-domain flow creates DNS automatically; the API endpoint used
+#      in step 2 does not.
 #   4. Ensures the account has a workers.dev subdomain. Without one,
 #      `wrangler deploy` of the party worker fails with API error 10063.
 #      A fresh Cloudflare account does not get this automatically — it's
@@ -23,7 +24,7 @@ name: Bootstrap Cloudflare
 #   - Account → Cloudflare Pages → Edit
 #   - Account → Account Settings → Read
 #   - Account → Workers Scripts → Edit (for the workers.dev subdomain)
-#   - Zone → DNS → Edit (for ninja-cactus.com)
+#   - Zone → DNS → Edit (for holdthesoap.com)
 # If any is missing, the workflow will fail with a clear error.
 
 on:
@@ -37,13 +38,16 @@ jobs:
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_KEY }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          PROJECT: joust
-          DOMAIN: joust.ninja-cactus.com
+          PROJECT: holdthesoap
+          DOMAIN: holdthesoap.com
+          # The DNS zone DOMAIN lives in. DOMAIN is the apex of this zone,
+          # so ZONE == DOMAIN (no subdomain to strip).
+          ZONE: holdthesoap.com
           PRODUCTION_BRANCH: main
-          # Globally unique. Falls back to ninja-cactus-<accountid-prefix>
+          # Globally unique. Falls back to holdthesoap-<accountid-prefix>
           # if the preferred name is taken by another Cloudflare account.
-          WORKERS_SUBDOMAIN: ninja-cactus
-          WORKER_NAME: joust-party
+          WORKERS_SUBDOMAIN: holdthesoap
+          WORKER_NAME: holdthesoap-party
         run: |
           set -eo pipefail
 
@@ -146,8 +150,8 @@ jobs:
           fi
 
           # Cloudflare reserves short/common .pages.dev names, so our
-          # project's actual subdomain might be "joust-abc", not "joust".
-          # Always use whatever the API tells us — never hardcode.
+          # project's actual subdomain might be "holdthesoap-abc", not
+          # "holdthesoap". Always use whatever the API tells us — never hardcode.
           PROJECT_SUBDOMAIN=$(jq -r '.result.subdomain // empty' "$RESPONSE_FILE")
           if [ -z "$PROJECT_SUBDOMAIN" ]; then
             die "Project response did not include a .subdomain field. Cannot determine the CNAME target." "$STATUS"
@@ -179,9 +183,10 @@ jobs:
           echo "::endgroup::"
 
           echo "::group::Step 3 — DNS record ($DOMAIN -> $PROJECT_SUBDOMAIN)"
-          # Derive the zone name from the domain. $DOMAIN is a single
-          # subdomain of the zone (joust.ninja-cactus.com -> ninja-cactus.com).
-          ZONE_NAME=${DOMAIN#*.}
+          # $DOMAIN is the apex of its zone (holdthesoap.com), so the zone
+          # name is just $ZONE — there's no subdomain label to strip. The
+          # CNAME is created at the apex; Cloudflare CNAME-flattens it.
+          ZONE_NAME="$ZONE"
           TARGET="$PROJECT_SUBDOMAIN"
 
           STATUS=$(api GET "/zones?name=$ZONE_NAME")
