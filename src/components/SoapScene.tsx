@@ -31,21 +31,32 @@ import { makeSoapGeometry, makeSoapTextures } from '../lib/soap';
 // every round, and regenerating the normal map (a per-pixel loop) each time was a
 // visible hitch. preloadSoapAssets() lets the Ready countdown build them (and the
 // lazy chunk download) ahead of time, so nothing heavy runs when the soap appears.
+// Textures depend on the engraved word, so they're cached per label (≤ 2 locales).
 let cachedGeometry: BufferGeometry | null = null;
-let cachedTextures: { colorMap: CanvasTexture; normalMap: CanvasTexture } | null = null;
+const cachedTextures = new Map<string, { colorMap: CanvasTexture; normalMap: CanvasTexture }>();
 
-function getSoapAssets() {
+function getSoapAssets(label: string) {
   if (!cachedGeometry) cachedGeometry = makeSoapGeometry();
-  if (!cachedTextures) cachedTextures = makeSoapTextures();
-  return { geometry: cachedGeometry, ...cachedTextures };
+  let textures = cachedTextures.get(label);
+  if (!textures) {
+    textures = makeSoapTextures(label);
+    cachedTextures.set(label, textures);
+  }
+  return { geometry: cachedGeometry, ...textures };
 }
 
-/** Warm the cached geometry + textures (call during the Ready phase). */
-export function preloadSoapAssets(): void {
-  getSoapAssets();
+/** Warm the cached geometry + textures for `label` (call during the Ready phase). */
+export function preloadSoapAssets(label: string): void {
+  getSoapAssets(label);
 }
 
-export default function SoapScene({ magnitude }: { magnitude: number }) {
+export default function SoapScene({
+  magnitude,
+  label,
+}: {
+  magnitude: number;
+  label: string;
+}) {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   // Latest magnitude, read by the animation loop without re-running the effect.
   const magRef = useRef(magnitude);
@@ -83,10 +94,10 @@ export default function SoapScene({ magnitude }: { magnitude: number }) {
     const glint = new PointLight(0xffe0f2, 18, 50, 2);
     scene.add(glint);
 
-    const { geometry, colorMap, normalMap } = getSoapAssets();
+    const { geometry, colorMap, normalMap } = getSoapAssets(label);
     const material = new MeshStandardMaterial({
       color: new Color('#ffd9ec'),
-      // Colour map tints the recessed "HOLD ME" darker so it always reads.
+      // Colour map tints the recessed brand word darker so it always reads.
       map: colorMap,
       // High roughness, no clearcoat/transmission → a soft matte soap finish.
       roughness: 0.72,
@@ -218,7 +229,7 @@ export default function SoapScene({ magnitude }: { magnitude: number }) {
       material.dispose();
       renderer.dispose();
     };
-  }, []);
+  }, [label]);
 
   return (
     <canvas

@@ -97,30 +97,36 @@ function paintGrain(ctx: CanvasRenderingContext2D, w: number, h: number): void {
   }
 }
 
-/** Draws "HOLD ME" centred and horizontal, blurred for a soft bevel ramp. */
-function drawBrand(ctx: CanvasRenderingContext2D, w: number, h: number, fill: string): void {
+/** Draws the brand word centred and horizontal, blurred for a soft bevel ramp. */
+function drawBrand(
+  ctx: CanvasRenderingContext2D,
+  w: number,
+  h: number,
+  fill: string,
+  text: string,
+): void {
   ctx.save();
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
   // Size relative to the canvas so it fits whatever resolution we use.
-  ctx.font = `700 ${Math.round(h * 0.28)}px "Fredoka", ui-rounded, system-ui, sans-serif`;
+  ctx.font = `700 ${Math.round(h * 0.3)}px "Fredoka", ui-rounded, system-ui, sans-serif`;
   ctx.filter = `blur(${Math.max(1, Math.round(w / 340))}px)`;
   ctx.fillStyle = fill;
-  ctx.fillText('HOLD ME', w / 2, h / 2);
+  ctx.fillText(text, w / 2, h / 2);
   ctx.restore();
   ctx.filter = 'none';
 }
 
 /**
  * The soap's surface textures, both laid out identically so they line up:
- *  - `colorMap`: white base with the recessed text tinted darker grey. Because
+ *  - `colorMap`: white base with the recessed `label` tinted darker grey. Because
  *    it multiplies the material's pink, the engraving always reads as a darker
  *    recess regardless of lighting.
- *  - `normalMap`: a tangent-space normal map from a "HOLD ME" height field (+
+ *  - `normalMap`: a tangent-space normal map from the `label` height field (+
  *    grain) for the bevel, so the recess also catches light.
  * The canvas is landscape (long U × short V) to match the horizontal bar.
  */
-export function makeSoapTextures(): {
+export function makeSoapTextures(label: string): {
   colorMap: CanvasTexture;
   normalMap: CanvasTexture;
 } {
@@ -136,7 +142,7 @@ export function makeSoapTextures(): {
   const cctx = color.getContext('2d')!;
   cctx.fillStyle = '#ffffff';
   cctx.fillRect(0, 0, w, h);
-  drawBrand(cctx, w, h, '#9f8e97'); // multiplies pink → clearly darker recess
+  drawBrand(cctx, w, h, '#9f8e97', label); // multiplies pink → darker recess
   const colorMap = new CanvasTexture(color);
   colorMap.colorSpace = SRGBColorSpace;
   colorMap.anisotropy = 4;
@@ -149,7 +155,7 @@ export function makeSoapTextures(): {
   hctx.fillStyle = '#808080';
   hctx.fillRect(0, 0, w, h);
   paintGrain(hctx, w, h);
-  drawBrand(hctx, w, h, '#0c0c0c'); // dark = deep recess
+  drawBrand(hctx, w, h, '#0c0c0c', label); // dark = deep recess
 
   const src = hctx.getImageData(0, 0, w, h).data;
   const out = new ImageData(w, h);

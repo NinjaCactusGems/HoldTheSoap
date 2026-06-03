@@ -113,15 +113,16 @@ function ReadyView({
   useEffect(() => {
     if (!webglAvailable()) return;
     let cancelled = false;
+    const label = t('game.soapStamp');
     void import('./SoapScene')
       .then((m) => {
-        if (!cancelled) m.preloadSoapAssets();
+        if (!cancelled) m.preloadSoapAssets(label);
       })
       .catch(() => {});
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [t]);
 
   // readyEndsAt is a server timestamp — convert it to local time with the same
   // RTT-synced offset the music uses, so the countdown counts down (and the
@@ -219,7 +220,7 @@ function HoldingView({
       {!iAmOut && webglAvailable() && (
         <SoapBoundary>
           <Suspense fallback={null}>
-            <SoapScene magnitude={detector.magnitude} />
+            <SoapScene magnitude={detector.magnitude} label={t('game.soapStamp')} />
           </Suspense>
         </SoapBoundary>
       )}
