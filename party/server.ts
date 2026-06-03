@@ -1,10 +1,10 @@
 import { Server, routePartykitRequest, type Connection } from 'partyserver';
 
-type Phase = 'lobby' | 'ready' | 'jousting' | 'winner';
+type Phase = 'lobby' | 'ready' | 'holding' | 'winner';
 
 type Reaction = 'turd' | 'heart' | 'dancer' | 'dancerF';
 
-// Tempo shifts during jousting: the music speed and shake sensitivity change
+// Tempo shifts during the hold phase: the music speed and shake sensitivity change
 // for the whole room at once. See src/lib/tempo.ts for the client-side targets.
 type Tempo = 'normal' | 'fast' | 'slow';
 
@@ -39,9 +39,9 @@ type RoomState = {
   // The winning team when a group wins (all survivors share one team); null when
   // a lone survivor wins (winnerId carries them instead). See checkWinCondition.
   winnerTeam: TeamId | null;
-  // Current jousting tempo and the server time it takes effect (announced a
+  // Current hold-phase tempo and the server time it takes effect (announced a
   // touch ahead so every client can schedule the flip in lockstep). Outside
-  // jousting this is always normal / null.
+  // the hold phase this is always normal / null.
   tempo: Tempo;
   tempoEffectiveAt: number | null;
   players: Player[];
@@ -103,11 +103,12 @@ const TEMPO_LEAD_MS = 500;
 // check runs in the worker's fetch handler before routePartykitRequest,
 // so unauthorized requests never spawn a DO.
 const ALLOWED_ORIGINS = new Set([
-  'https://joust.ninja-cactus.com',
-  'https://joust.pages.dev',
+  'https://holdthesoap.com',
+  'https://www.holdthesoap.com',
+  'https://holdthesoap.pages.dev',
 ]);
 
-const ALLOWED_ORIGIN_SUFFIXES = ['.joust.pages.dev'];
+const ALLOWED_ORIGIN_SUFFIXES = ['.holdthesoap.pages.dev'];
 
 function isAllowedOrigin(origin: string | null): boolean {
   if (!origin) return false;
@@ -228,7 +229,7 @@ export class Main extends Server {
         break;
       }
       case 'eliminate': {
-        if (this.phase !== 'jousting') return;
+        if (this.phase !== 'holding') return;
         const entry = this.ensurePlayer(connection.id);
         if (entry.eliminated) return; // idempotent — clients may send twice
         entry.eliminated = true;
@@ -264,7 +265,7 @@ export class Main extends Server {
     this.playerState.delete(connection.id);
     this.broadcastState();
     // A disconnect can leave a single survivor — resolve the round.
-    if (this.phase === 'jousting') this.checkWinCondition();
+    if (this.phase === 'holding') this.checkWinCondition();
   }
 
   private ensurePlayer(id: string): {
@@ -358,11 +359,11 @@ export class Main extends Server {
     this.readyEndsAt = Date.now() + READY_DURATION_MS;
     this.broadcastState();
 
-    this.scheduleTimer(READY_DURATION_MS, () => this.startJousting());
+    this.scheduleTimer(READY_DURATION_MS, () => this.startHolding());
   }
 
-  private startJousting() {
-    this.phase = 'jousting';
+  private startHolding() {
+    this.phase = 'holding';
     this.readyEndsAt = null;
     // Always start at normal, effective right at "GO", then begin the cycle.
     this.tempo = 'normal';
@@ -370,7 +371,7 @@ export class Main extends Server {
     this.broadcastState();
     this.tempoTimer = setTimeout(() => this.applyNextTempo(), this.randTempoHold());
     // A solo room (or one already down to a single player) resolves at once
-    // rather than hanging in jousting forever.
+    // rather than hanging in the hold phase forever.
     this.checkWinCondition();
   }
 
@@ -390,7 +391,7 @@ export class Main extends Server {
   }
 
   private applyNextTempo() {
-    if (this.phase !== 'jousting') return;
+    if (this.phase !== 'holding') return;
     this.tempo = this.pickNextTempo(this.tempo);
     // Announce slightly ahead so every client can schedule the synced flip.
     this.tempoEffectiveAt = Date.now() + TEMPO_LEAD_MS;
@@ -411,7 +412,7 @@ export class Main extends Server {
   }
 
   private checkWinCondition() {
-    if (this.phase !== 'jousting') return;
+    if (this.phase !== 'holding') return;
     const alive = this.currentPlayers().filter((p) => !p.eliminated);
     // The round resolves once everyone left belongs to a single side.
     const factions = new Set(

@@ -9,7 +9,7 @@ import {
 } from 'react';
 import { dict, type Locale, type TranslationKey } from './translations';
 
-const LOCALE_KEY = 'joust:locale';
+const LOCALE_KEY = 'holdthesoap:locale';
 
 // Stored preference wins; otherwise fall back to the browser/OS language
 // (any de* variant → German), then English.

@@ -1,5 +1,5 @@
 {
-  "name": "joust",
+  "name": "holdthesoap",
   "private": true,
   "version": "0.0.0",
   "type": "module",
@@ -11,8 +11,8 @@
     "typecheck:party": "tsc -p party/tsconfig.json --noEmit",
     "lint": "eslint .",
     "dev:party": "wrangler dev --config party/wrangler.toml",
-    "deploy:prod": "wrangler pages deploy ./dist --project-name=joust --branch=main",
-    "deploy:preview": "wrangler pages deploy ./dist --project-name=joust",
+    "deploy:prod": "wrangler pages deploy ./dist --project-name=holdthesoap --branch=main",
+    "deploy:preview": "wrangler pages deploy ./dist --project-name=holdthesoap",
     "deploy:party": "wrangler deploy --config party/wrangler.toml"
   },
   "dependencies": {

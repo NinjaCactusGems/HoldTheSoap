@@ -10,7 +10,7 @@ import type { Tempo } from '../lib/tempo';
  * Used twice — once to drive the music playback rate, once to drive the shake
  * threshold — so both shift in lockstep with each other and across the room.
  *
- * When `effectiveAt` is null (not jousting) it snaps straight back to normal.
+ * When `effectiveAt` is null (not in the hold phase) it snaps straight back to normal.
  */
 export function useSyncedTempo(
   tempo: Tempo,
@@ -30,7 +30,7 @@ export function useSyncedTempo(
     }
 
     if (effectiveAt == null) {
-      // Round over / not jousting — return to normal once.
+      // Round over / not in the hold phase — return to normal once.
       if (lastKeyRef.current !== 'none') {
         lastKeyRef.current = 'none';
         applyRef.current('normal');

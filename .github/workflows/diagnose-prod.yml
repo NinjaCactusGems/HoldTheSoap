@@ -28,8 +28,8 @@ jobs:
     env:
       CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_KEY }}
       CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-      PAGES_URL: https://joust.ninja-cactus.com
-      WORKER_NAME: joust-party
+      PAGES_URL: https://holdthesoap.com
+      WORKER_NAME: holdthesoap-party
       PARTY_HOST: ${{ vars.PARTY_HOST }}
       REPORT: /tmp/report.md
       ROWS: /tmp/rows.md
@@ -126,7 +126,7 @@ jobs:
               STATUS="WARN"; DETAIL="no JS bundle reference found in index.html"
             else
               curl -sL --max-time 10 "${PAGES_URL}/${ASSET}" -o /tmp/bundle.js
-              MATCHES=$(grep -oE '(joust-party[A-Za-z0-9.-]*\.workers\.dev|localhost:1999)' /tmp/bundle.js \
+              MATCHES=$(grep -oE '(holdthesoap-party[A-Za-z0-9.-]*\.workers\.dev|localhost:1999)' /tmp/bundle.js \
                 | sort -u | tr '\n' ',' | sed 's/,$//')
               if [ -z "$MATCHES" ]; then
                 STATUS="WARN"; DETAIL="no recognised host string in bundle"
@@ -200,7 +200,7 @@ jobs:
             BODY=$(mktemp)
             CODE=$(curl -sS -o "$BODY" -w '%{http_code}' \
               -H "Authorization: Bearer ${CLOUDFLARE_API_TOKEN}" \
-              "https://api.cloudflare.com/client/v4/accounts/${CLOUDFLARE_ACCOUNT_ID}/pages/projects/joust/deployments?per_page=1")
+              "https://api.cloudflare.com/client/v4/accounts/${CLOUDFLARE_ACCOUNT_ID}/pages/projects/holdthesoap/deployments?per_page=1")
             if [ "$CODE" = "200" ]; then
               ENV=$(jq -r '.result[0].environment // empty' "$BODY")
               CREATED=$(jq -r '.result[0].created_on // empty' "$BODY")
@@ -306,7 +306,7 @@ jobs:
         run: |
           set +e
           {
-            echo "# Joust production diagnostics"
+            echo "# HOLD THE SOAP production diagnostics"
             echo ""
             echo "**Run:** [${GITHUB_RUN_ID}](${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}) · $(date -u +'%Y-%m-%d %H:%M UTC')"
             echo ""

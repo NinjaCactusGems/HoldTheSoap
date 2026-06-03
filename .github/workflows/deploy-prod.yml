@@ -59,7 +59,7 @@ jobs:
             echo "$BODY"
             exit 1
           fi
-          HOST="joust-party.${SUB}.workers.dev"
+          HOST="holdthesoap-party.${SUB}.workers.dev"
           echo "Resolved party host: $HOST"
           echo "value=$HOST" >> "$GITHUB_OUTPUT"
 
@@ -72,4 +72,4 @@ jobs:
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_KEY }}
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          command: pages deploy ./dist --project-name=joust --branch=main
+          command: pages deploy ./dist --project-name=holdthesoap --branch=main

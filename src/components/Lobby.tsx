@@ -16,11 +16,11 @@ import { useI18n } from '../i18n/I18nContext';
 
 const PARTY_HOST = import.meta.env.VITE_PARTY_HOST || 'localhost:1999';
 
-const PLAYER_NAME_KEY = 'joust:playerName';
+const PLAYER_NAME_KEY = 'holdthesoap:playerName';
 
-// Jousting starts at the Normal/medium threshold (7 m/s², per CLAUDE.md); tempo
+// The hold phase starts at the Normal/medium threshold (7 m/s², per CLAUDE.md); tempo
 // shifts move it to Sensitive (slow) or Forgiving (fast) mid-round.
-const JOUST_THRESHOLD = TEMPO_THRESHOLD.normal;
+const HOLD_THRESHOLD = TEMPO_THRESHOLD.normal;
 
 // After a win the server returns to the lobby, but we keep the soundtrack going
 // this much longer so it rides through the transition and fades out as the
@@ -181,7 +181,7 @@ function Room({ code, onLeave }: { code: string; onLeave: () => void }) {
   // One motion session for the whole room, started on the "I'm ready" gesture
   // (iOS requires the permission request to come from a user gesture). The
   // Game overlay reads lastShakeAt from this to detect "moved too fast".
-  const detector = useShakeDetector(JOUST_THRESHOLD);
+  const detector = useShakeDetector(HOLD_THRESHOLD);
 
   // Keep the screen awake for the whole time in a room: a phone slipping into
   // standby hides the page, which the server treats as "away".
@@ -223,8 +223,8 @@ function Room({ code, onLeave }: { code: string; onLeave: () => void }) {
           setTempoEffectiveAt(data.tempoEffectiveAt ?? null);
           setPlayers(Array.isArray(data.players) ? data.players : []);
           // Remember the winner so the post-game lobby can keep showing it; a
-          // new round (ready/jousting) clears it.
-          if (nextPhase === 'ready' || nextPhase === 'jousting') {
+          // new round (ready/holding) clears it.
+          if (nextPhase === 'ready' || nextPhase === 'holding') {
             setPostGameWinnerId(null);
             setPostGameWinnerTeam(null);
           } else if (

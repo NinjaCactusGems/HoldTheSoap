@@ -1,6 +1,6 @@
 // Team play: exotic, cute animals you can rally behind. Each team has a unique
 // color in the app's earthy / aged-paper palette — muted but clearly distinct
-// from one another, and from the jousting "out" red (#8A2B22) and burgundy
+// from one another, and from the hold-phase "out" red (#8A2B22) and burgundy
 // accent (#7A2E2E), so a team's color reads at a glance on the roster and the
 // winner screen.
 //

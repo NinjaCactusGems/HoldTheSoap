@@ -15,7 +15,7 @@
   --color-go:    #4F6F52; /* connected / create */
   --color-ochre: #9A7B2E; /* connecting */
 
-  /* full-screen jousting fields — readable across a room */
+  /* full-screen hold-phase fields — readable across a room */
   --color-olive:      #6B7A3F; /* still in (distinct from go #4F6F52) */
   --color-eliminated: #8A2B22; /* out (distinct from accent burgundy #7A2E2E) */
 
