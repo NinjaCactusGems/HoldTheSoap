@@ -2,7 +2,7 @@
 //
 // `makeSoapGeometry` builds a superellipsoid — a rounded "pillow" — the classic
 // bar-of-soap silhouette (a chunky horizontal bar). `makeSoapTextures` paints
-// "Hold Me" along the long side into BOTH a colour map (recess tinted darker, so
+// "HOLD ME" along the long side into BOTH a colour map (recess tinted darker, so
 // the engraving always reads) and a tangent-space normal map (the bevel), plus
 // faint grain.
 
@@ -57,8 +57,9 @@ export function makeSoapGeometry(
       positions[p++] = halfY * ny;
       positions[p++] = halfZ * nz;
       // Planar top-down (XZ) projection, so the stamp lies flat and readable on
-      // the broad top face; the thin side walls just get vertical streaks.
-      uvs[t++] = nx * 0.5 + 0.5;
+      // the broad top face; the thin side walls just get vertical streaks. U is
+      // negated so the brand reads the right way round on the camera-facing face.
+      uvs[t++] = -nx * 0.5 + 0.5;
       uvs[t++] = nz * 0.5 + 0.5;
     }
   }
@@ -96,7 +97,7 @@ function paintGrain(ctx: CanvasRenderingContext2D, w: number, h: number): void {
   }
 }
 
-/** Draws "Hold Me" centred and horizontal, blurred for a soft bevel ramp. */
+/** Draws "HOLD ME" centred and horizontal, blurred for a soft bevel ramp. */
 function drawBrand(ctx: CanvasRenderingContext2D, w: number, h: number, fill: string): void {
   ctx.save();
   ctx.textAlign = 'center';
@@ -104,7 +105,7 @@ function drawBrand(ctx: CanvasRenderingContext2D, w: number, h: number, fill: st
   ctx.font = '700 220px "Fredoka", ui-rounded, system-ui, sans-serif';
   ctx.filter = 'blur(3px)';
   ctx.fillStyle = fill;
-  ctx.fillText('Hold Me', w / 2, h / 2);
+  ctx.fillText('HOLD ME', w / 2, h / 2);
   ctx.restore();
   ctx.filter = 'none';
 }
@@ -114,7 +115,7 @@ function drawBrand(ctx: CanvasRenderingContext2D, w: number, h: number, fill: st
  *  - `colorMap`: white base with the recessed text tinted darker grey. Because
  *    it multiplies the material's pink, the engraving always reads as a darker
  *    recess regardless of lighting.
- *  - `normalMap`: a tangent-space normal map from a "Hold Me" height field (+
+ *  - `normalMap`: a tangent-space normal map from a "HOLD ME" height field (+
  *    grain) for the bevel, so the recess also catches light.
  * The canvas is landscape (long U × short V) to match the horizontal bar.
  */
