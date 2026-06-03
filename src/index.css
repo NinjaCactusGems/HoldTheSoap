@@ -1,24 +1,32 @@
 @import "tailwindcss";
 
 @theme {
-  --color-paper:        #F5F0E6; /* warm aged ivory page bg */
-  --color-paper-raised: #FBF8F1; /* card surface (lifts above page) */
-  --color-ink:          #1F1B16; /* primary text, ~15:1 on paper (AAA) */
-  --color-ink-muted:    #6B5E4E; /* labels / secondary, ~4.9:1 (AA) */
-  --color-ink-faint:    #9C8E79; /* placeholders, footer, disabled */
-  --color-line:         #D8CFBE; /* borders, dividers, meter track */
-  --color-accent:       #7A2E2E; /* burgundy ink — primary buttons/fill */
-  --color-accent-soft:  #9B4444; /* hover */
-  --color-flash:        #B5532E; /* sepia-burgundy shake flash */
+  /* "Bubble bath" candy theme: baby-blue page, white windows, pink + blue. */
+  --color-sky:          #D9EFFB; /* baby-blue page background */
+  --color-paper:        #FFFFFF; /* light text on buttons / input fields */
+  --color-paper-raised: #FFFFFF; /* white "window" surfaces (panels, QR) */
+  --color-ink:          #243743; /* primary text — cool dark slate */
+  --color-ink-muted:    #5A7180; /* labels / secondary */
+  --color-ink-faint:    #97AEBC; /* placeholders, footer, disabled */
+  --color-line:         #CFE6F2; /* cool light borders, dividers, meter track */
+  --color-accent:       #EA4FA0; /* magenta-pink — emphasis / shake button */
+  --color-accent-soft:  #F26FB4; /* hover */
+  --color-flash:        #FF8FC8; /* pink shake flash */
 
-  /* muted status tones (earthy, period-appropriate) */
-  --color-go:    #4F6F52; /* connected / create */
-  --color-ochre: #9A7B2E; /* connecting */
+  /* status tones */
+  --color-go:    #3FAEE0; /* connected / create / ready / start (sky blue) */
+  --color-ochre: #F4B445; /* connecting (candy amber) */
 
-  /* full-screen hold-phase fields — readable across a room */
-  --color-olive:      #6B7A3F; /* still in (distinct from go #4F6F52) */
-  --color-eliminated: #8A2B22; /* out (distinct from accent burgundy #7A2E2E) */
+  /* "not ready" / leave warning (coral) */
+  --color-eliminated: #FF7C9C;
+  --color-olive:      #F86FB1; /* legacy token, repointed to pink (unused) */
 
+  /* brand + full-screen hold-phase fields — readable across a room */
+  --color-pink:    #F86FB1; /* title text + alive "HOLD" background */
+  --color-hold:    #F86FB1; /* in-game alive background */
+  --color-dropped: #A6D8F7; /* in-game eliminated background (light blue) */
+
+  --font-round: "Fredoka", ui-rounded, "Segoe UI Rounded", "Hiragino Maru Gothic ProN", system-ui, sans-serif;
   --font-serif: ui-serif, Georgia, "Times New Roman", Cambria, serif;
 }
 
@@ -70,17 +78,5 @@
   }
   .animate-winner-fade {
     animation: winner-fade 1.6s ease-out forwards;
-  }
-}
-
-@layer components {
-  /* Subtle staff-line ruling: 1px ink line every 28px at 6% — barely there */
-  .bg-staff {
-    background-color: var(--color-paper);
-    background-image: repeating-linear-gradient(
-      to bottom,
-      transparent 0 27px,
-      color-mix(in srgb, var(--color-ink) 6%, transparent) 27px 28px
-    );
   }
 }

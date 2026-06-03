@@ -126,11 +126,11 @@ function BulletFigure({ n }: { n: 1 | 2 | 3 | 4 }) {
         {/* still in: arm holding an olive-screen phone */}
         <path d="M12 42 q3 -12 12 -17" />
         <rect x="20" y="11" width="13" height="17" rx="2.5" />
-        <rect x="22.5" y="13.5" width="8" height="12" rx="1" fill="var(--color-olive)" stroke="none" />
+        <rect x="22.5" y="13.5" width="8" height="12" rx="1" fill="var(--color-hold)" stroke="none" />
         {/* out: arm holding a red-screen phone, just tapped, buzzing */}
         <path d="M58 42 q3 -12 12 -17" />
         <rect x="66" y="11" width="13" height="17" rx="2.5" />
-        <rect x="68.5" y="13.5" width="8" height="12" rx="1" fill="var(--color-eliminated)" stroke="none" />
+        <rect x="68.5" y="13.5" width="8" height="12" rx="1" fill="var(--color-dropped)" stroke="none" />
         {/* a rival's arm reaching in to tap the red-phone forearm */}
         <path d="M94 40 q-15 0 -31 -8" />
         {/* vibration swirls around the red phone */}

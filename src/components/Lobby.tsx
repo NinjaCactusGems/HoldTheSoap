@@ -444,7 +444,7 @@ function Room({ code, onLeave }: { code: string; onLeave: () => void }) {
 
       <div className="flex flex-col items-center gap-3">
         <div className="rounded-xl bg-paper-raised p-3">
-          <QRCodeSVG value={shareUrl} size={140} bgColor="#FBF8F1" fgColor="#1F1B16" />
+          <QRCodeSVG value={shareUrl} size={140} bgColor="#FFFFFF" fgColor="#243743" />
         </div>
         <button
           type="button"
