@@ -16,7 +16,7 @@ import {
   Vector3,
 } from 'three';
 import { RoomEnvironment } from 'three/examples/jsm/environments/RoomEnvironment.js';
-import { makeSoapGeometry, makeStampNormalMap } from '../lib/soap';
+import { makeSoapGeometry, makeSoapTextures } from '../lib/soap';
 
 /**
  * A full-screen, procedurally-generated 3D bar of soap (see ../lib/soap). Glossy
@@ -64,14 +64,16 @@ export default function SoapScene({ magnitude }: { magnitude: number }) {
     scene.add(glint);
 
     const geometry = makeSoapGeometry();
-    const normalTex = makeStampNormalMap();
+    const { colorMap, normalMap } = makeSoapTextures();
     const material = new MeshPhysicalMaterial({
       color: new Color('#ffd9ec'),
+      // Colour map tints the recessed "Hold Me" darker so it always reads.
+      map: colorMap,
       roughness: 0.3,
       metalness: 0,
-      // Lower transmission so the front face dominates — high transmission let
-      // the back-face engraving show through (reading mirrored and washed out).
-      transmission: 0.3,
+      // Modest transmission keeps a glycerin glow without the back-face
+      // engraving ghosting through (which read mirrored when set high).
+      transmission: 0.25,
       thickness: 0.6,
       ior: 1.4,
       clearcoat: 0.6,
@@ -83,12 +85,12 @@ export default function SoapScene({ magnitude }: { magnitude: number }) {
       sheen: 0.5,
       sheenColor: new Color('#ffffff'),
       envMapIntensity: 1.3,
-      // Engraving lives in the normal map; applied to the base surface and the
-      // clearcoat, strongly, so it stays visible through the gloss.
-      normalMap: normalTex,
-      normalScale: new Vector2(1.6, 1.6),
-      clearcoatNormalMap: normalTex,
-      clearcoatNormalScale: new Vector2(1.2, 1.2),
+      // Normal map adds the engraved bevel on top of the colour recess, on both
+      // the base surface and the clearcoat so it survives the gloss.
+      normalMap: normalMap,
+      normalScale: new Vector2(1.3, 1.3),
+      clearcoatNormalMap: normalMap,
+      clearcoatNormalScale: new Vector2(1, 1),
       transparent: true,
     });
 
@@ -98,10 +100,9 @@ export default function SoapScene({ magnitude }: { magnitude: number }) {
     // Rest pose: the stamped broad face turned toward the camera, tilted back a
     // little so the bar's thickness reads. The animation loop nudges around this.
     // Top (stamped) face toward the camera, tilted a little so the thickness
-    // reads. The bar's long axis is vertical, so it fills the height; only a
-    // slight roll for life.
-    const baseRotX = Math.PI / 2 - 0.22;
-    const baseRotZ = -0.08;
+    // reads, with a diagonal roll for presence (horizontal bar).
+    const baseRotX = Math.PI / 2 - 0.3;
+    const baseRotZ = -0.4;
 
     // Measure the bar's actual projected size at unit scale, then "contain" it
     // inside the camera frustum with a margin. This keeps the whole bar on
@@ -119,7 +120,7 @@ export default function SoapScene({ magnitude }: { magnitude: number }) {
       soap.updateMatrixWorld(true);
       fitBox.setFromObject(soap);
       fitBox.getSize(fitSize);
-      const fill = 0.92;
+      const fill = 0.96;
       baseScale = Math.min((visW * fill) / fitSize.x, (visH * fill) / fitSize.y);
       soap.scale.setScalar(baseScale);
     }
@@ -216,7 +217,8 @@ export default function SoapScene({ magnitude }: { magnitude: number }) {
       reduceMotion.removeEventListener('change', onMotionPrefChange);
       geometry.dispose();
       material.dispose();
-      normalTex.dispose();
+      colorMap.dispose();
+      normalMap.dispose();
       envRT.dispose();
       pmrem.dispose();
       renderer.dispose();

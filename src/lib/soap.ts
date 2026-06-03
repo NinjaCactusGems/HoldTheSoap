@@ -1,12 +1,17 @@
 // Procedural soap-bar assets, generated entirely in code (no model/image files).
 //
-// `makeSoapGeometry` builds a superellipsoid — a rounded "pillow" — which is the
-// classic bar-of-soap silhouette. The default proportions make a longer bar
-// meant to stand vertically. `makeStampNormalMap` paints a height field
-// ("Hold Me" running along the long side + fine grain) and converts it to a
-// tangent-space normal map, so the engraving reads even through a glossy clearcoat.
+// `makeSoapGeometry` builds a superellipsoid — a rounded "pillow" — the classic
+// bar-of-soap silhouette (a chunky horizontal bar). `makeSoapTextures` paints
+// "Hold Me" along the long side into BOTH a colour map (recess tinted darker, so
+// the engraving always reads) and a tangent-space normal map (the bevel), plus
+// faint grain.
 
-import { BufferGeometry, BufferAttribute, CanvasTexture } from 'three';
+import {
+  BufferGeometry,
+  BufferAttribute,
+  CanvasTexture,
+  SRGBColorSpace,
+} from 'three';
 
 /** Signed power: keeps the sign while raising |v| to an exponent. */
 function spow(v: number, p: number): number {
@@ -15,13 +20,13 @@ function spow(v: number, p: number): number {
 
 /**
  * A superellipsoid surface sampled into a BufferGeometry. The default extents
- * make a long, slim bar (Z is the long axis) that stands vertically on screen.
- * `half*` are the half-extents (width X, thickness Y, length Z).
+ * make a chunky horizontal bar (X is the long axis). `half*` are the
+ * half-extents (length X, thickness Y, depth Z).
  */
 export function makeSoapGeometry(
-  halfX = 0.6,
-  halfY = 0.34,
-  halfZ = 1.4,
+  halfX = 1.0,
+  halfY = 0.36,
+  halfZ = 0.78,
   roundness = 0.35,
   segU = 160,
   segV = 96,
@@ -91,19 +96,48 @@ function paintGrain(ctx: CanvasRenderingContext2D, w: number, h: number): void {
   }
 }
 
-/**
- * A tangent-space normal map for the soap surface: a height field with "Hold Me"
- * debossed (darker = recessed) along the long axis, plus faint grain, converted
- * to normals via finite differences. Applied as both normalMap and
- * clearcoatNormalMap so the engraving survives the glossy top coat. The canvas
- * is portrait (short U × long V) to match the bar; the word is rotated to run
- * up the long (V) axis.
- */
-export function makeStampNormalMap(): CanvasTexture {
-  const w = 640;
-  const h = 1280;
+/** Draws "Hold Me" centred and horizontal, blurred for a soft bevel ramp. */
+function drawBrand(ctx: CanvasRenderingContext2D, w: number, h: number, fill: string): void {
+  ctx.save();
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.font = '700 220px "Fredoka", ui-rounded, system-ui, sans-serif';
+  ctx.filter = 'blur(3px)';
+  ctx.fillStyle = fill;
+  ctx.fillText('Hold Me', w / 2, h / 2);
+  ctx.restore();
+  ctx.filter = 'none';
+}
 
-  // 1) Height field: mid-grey base, faint grain, recessed (dark) brand text.
+/**
+ * The soap's surface textures, both laid out identically so they line up:
+ *  - `colorMap`: white base with the recessed text tinted darker grey. Because
+ *    it multiplies the material's pink, the engraving always reads as a darker
+ *    recess regardless of lighting.
+ *  - `normalMap`: a tangent-space normal map from a "Hold Me" height field (+
+ *    grain) for the bevel, so the recess also catches light.
+ * The canvas is landscape (long U × short V) to match the horizontal bar.
+ */
+export function makeSoapTextures(): {
+  colorMap: CanvasTexture;
+  normalMap: CanvasTexture;
+} {
+  const w = 1024;
+  const h = 768;
+
+  // --- Colour map: white base, darker-grey recessed text. ---
+  const color = document.createElement('canvas');
+  color.width = w;
+  color.height = h;
+  const cctx = color.getContext('2d')!;
+  cctx.fillStyle = '#ffffff';
+  cctx.fillRect(0, 0, w, h);
+  drawBrand(cctx, w, h, '#9f8e97'); // multiplies pink → clearly darker recess
+  const colorMap = new CanvasTexture(color);
+  colorMap.colorSpace = SRGBColorSpace;
+  colorMap.anisotropy = 4;
+
+  // --- Height field → normal map (bevel). ---
   const height = document.createElement('canvas');
   height.width = w;
   height.height = h;
@@ -111,21 +145,8 @@ export function makeStampNormalMap(): CanvasTexture {
   hctx.fillStyle = '#808080';
   hctx.fillRect(0, 0, w, h);
   paintGrain(hctx, w, h);
-  // "Hold Me" rotated to run along the long axis. A slight blur widens the
-  // bevel ramp so the engraving catches light and reads clearly.
-  hctx.save();
-  hctx.translate(w / 2, h / 2);
-  hctx.rotate(-Math.PI / 2);
-  hctx.textAlign = 'center';
-  hctx.textBaseline = 'middle';
-  hctx.font = '700 220px "Fredoka", ui-rounded, system-ui, sans-serif';
-  hctx.filter = 'blur(3px)';
-  hctx.fillStyle = '#0c0c0c'; // dark = deep recess
-  hctx.fillText('Hold Me', 0, 0);
-  hctx.restore();
-  hctx.filter = 'none';
+  drawBrand(hctx, w, h, '#0c0c0c'); // dark = deep recess
 
-  // 2) Convert the height field to a normal map (finite-difference gradient).
   const src = hctx.getImageData(0, 0, w, h).data;
   const out = new ImageData(w, h);
   const strength = 4;
@@ -146,13 +167,12 @@ export function makeStampNormalMap(): CanvasTexture {
       out.data[i + 3] = 255;
     }
   }
-
   const normal = document.createElement('canvas');
   normal.width = w;
   normal.height = h;
   normal.getContext('2d')!.putImageData(out, 0, 0);
+  const normalMap = new CanvasTexture(normal);
+  normalMap.anisotropy = 4; // linear data — must NOT be tagged sRGB
 
-  const tex = new CanvasTexture(normal);
-  tex.anisotropy = 4;
-  return tex; // linear data — must NOT be tagged sRGB
+  return { colorMap, normalMap };
 }
