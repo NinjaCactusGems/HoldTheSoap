@@ -4,28 +4,47 @@ import {
   PerspectiveCamera,
   WebGLRenderer,
   Mesh,
-  MeshPhysicalMaterial,
+  MeshStandardMaterial,
   DirectionalLight,
+  HemisphereLight,
   PointLight,
-  PMREMGenerator,
   Clock,
   Color,
   MathUtils,
   Box3,
   Vector2,
   Vector3,
+  type BufferGeometry,
+  type CanvasTexture,
 } from 'three';
-import { RoomEnvironment } from 'three/examples/jsm/environments/RoomEnvironment.js';
 import { makeSoapGeometry, makeSoapTextures } from '../lib/soap';
 
 /**
- * A full-screen, procedurally-generated 3D bar of soap (see ../lib/soap). Glossy
- * translucent glycerin material lit by a procedural room environment — no model
- * or HDR assets. The bar trembles in response to the live device-motion
- * `magnitude` (from useShakeDetector), so a shaky hand visibly makes the soap
- * threaten to slip. Mirrors Bubbles.tsx: respects reduced motion, pauses when
- * hidden, and disposes all GPU resources on unmount.
+ * A full-screen, procedurally-generated 3D bar of soap (see ../lib/soap). Matte
+ * soap material lit by cheap lights (no PMREM/env — that was the biggest startup
+ * hitch). The bar trembles in response to the live device-motion `magnitude`
+ * (from useShakeDetector), so a shaky hand visibly makes the soap threaten to
+ * slip. Mirrors Bubbles.tsx: respects reduced motion, pauses when hidden.
  */
+
+// The procedural mesh + textures are built ONCE and reused. HoldingView remounts
+// every round, and regenerating the normal map (a per-pixel loop) each time was a
+// visible hitch. preloadSoapAssets() lets the Ready countdown build them (and the
+// lazy chunk download) ahead of time, so nothing heavy runs when the soap appears.
+let cachedGeometry: BufferGeometry | null = null;
+let cachedTextures: { colorMap: CanvasTexture; normalMap: CanvasTexture } | null = null;
+
+function getSoapAssets() {
+  if (!cachedGeometry) cachedGeometry = makeSoapGeometry();
+  if (!cachedTextures) cachedTextures = makeSoapTextures();
+  return { geometry: cachedGeometry, ...cachedTextures };
+}
+
+/** Warm the cached geometry + textures (call during the Ready phase). */
+export function preloadSoapAssets(): void {
+  getSoapAssets();
+}
+
 export default function SoapScene({ magnitude }: { magnitude: number }) {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   // Latest magnitude, read by the animation loop without re-running the effect.
@@ -50,56 +69,36 @@ export default function SoapScene({ magnitude }: { magnitude: number }) {
     const camera = new PerspectiveCamera(35, width / height, 0.1, 100);
     camera.position.set(0, 0, 6);
 
-    // Procedural reflections/lighting — no HDR file needed.
-    const pmrem = new PMREMGenerator(renderer);
-    const envScene = new RoomEnvironment();
-    const envRT = pmrem.fromScene(envScene, 0.04);
-    scene.environment = envRT.texture;
-
-    const key = new DirectionalLight(0xffffff, 2.2);
-    key.position.set(3, 4, 5);
+    // Soft, cheap lighting — matte soap doesn't need an environment map, and
+    // skipping PMREM removes the big first-frame stall.
+    const hemi = new HemisphereLight(0xffe3f1, 0xd98cb4, 1.1);
+    scene.add(hemi);
+    const key = new DirectionalLight(0xffffff, 2);
+    key.position.set(2.5, 4, 4);
     scene.add(key);
-    // A coloured point light we sweep for a travelling specular glint.
-    const glint = new PointLight(0xffe0f2, 40, 60, 2);
+    const fill = new DirectionalLight(0xffd9ec, 0.5);
+    fill.position.set(-3, -1, 2);
+    scene.add(fill);
+    // A coloured point light we sweep for a soft travelling highlight.
+    const glint = new PointLight(0xffe0f2, 18, 50, 2);
     scene.add(glint);
 
-    const geometry = makeSoapGeometry();
-    const { colorMap, normalMap } = makeSoapTextures();
-    const material = new MeshPhysicalMaterial({
+    const { geometry, colorMap, normalMap } = getSoapAssets();
+    const material = new MeshStandardMaterial({
       color: new Color('#ffd9ec'),
       // Colour map tints the recessed "HOLD ME" darker so it always reads.
       map: colorMap,
-      // Higher roughness + light clearcoat = a softer, more matte soap finish.
-      roughness: 0.45,
+      // High roughness, no clearcoat/transmission → a soft matte soap finish.
+      roughness: 0.72,
       metalness: 0,
-      // Modest transmission keeps a glycerin glow without the back-face
-      // engraving ghosting through (which read mirrored when set high).
-      transmission: 0.25,
-      thickness: 0.6,
-      ior: 1.4,
-      clearcoat: 0.3,
-      clearcoatRoughness: 0.4,
-      iridescence: 0.12,
-      iridescenceIOR: 1.3,
-      attenuationColor: new Color('#ff9ccb'),
-      attenuationDistance: 1.5,
-      sheen: 0.4,
-      sheenColor: new Color('#ffffff'),
-      envMapIntensity: 1.05,
-      // Normal map adds the engraved bevel on top of the colour recess, on both
-      // the base surface and the clearcoat so it survives the gloss.
+      // Normal map adds the engraved bevel on top of the colour recess.
       normalMap: normalMap,
-      normalScale: new Vector2(1.3, 1.3),
-      clearcoatNormalMap: normalMap,
-      clearcoatNormalScale: new Vector2(1, 1),
-      transparent: true,
+      normalScale: new Vector2(1.1, 1.1),
     });
 
     const soap = new Mesh(geometry, material);
     scene.add(soap);
 
-    // Rest pose: the stamped broad face turned toward the camera, tilted back a
-    // little so the bar's thickness reads. The animation loop nudges around this.
     // Top (stamped) face toward the camera, tilted a little so the thickness
     // reads, with a diagonal roll for presence (horizontal bar).
     const baseRotX = Math.PI / 2 - 0.3;
@@ -137,9 +136,7 @@ export default function SoapScene({ magnitude }: { magnitude: number }) {
       const t = clock.getElapsedTime();
 
       // Ease the tremble toward an intensity derived from live acceleration.
-      const intensity = animated
-        ? Math.min(magRef.current / 12, 1.5)
-        : 0;
+      const intensity = animated ? Math.min(magRef.current / 12, 1.5) : 0;
       tremble += (intensity - tremble) * 0.08;
 
       // Gentle idle sway (kept small so it stays within the fitted margin), plus
@@ -216,12 +213,9 @@ export default function SoapScene({ magnitude }: { magnitude: number }) {
       window.removeEventListener('resize', resize);
       document.removeEventListener('visibilitychange', onVisibility);
       reduceMotion.removeEventListener('change', onMotionPrefChange);
-      geometry.dispose();
+      // Geometry + textures are cached and reused across rounds — only the
+      // per-mount renderer and material are disposed.
       material.dispose();
-      colorMap.dispose();
-      normalMap.dispose();
-      envRT.dispose();
-      pmrem.dispose();
       renderer.dispose();
     };
   }, []);

@@ -106,6 +106,23 @@ function ReadyView({
   toLocalTime: (serverTs: number) => number;
 }) {
   const { t } = useI18n();
+
+  // Warm the soap up during the countdown: download the three.js chunk and build
+  // the (cached) geometry + textures now, so nothing heavy runs the instant the
+  // hold phase begins.
+  useEffect(() => {
+    if (!webglAvailable()) return;
+    let cancelled = false;
+    void import('./SoapScene')
+      .then((m) => {
+        if (!cancelled) m.preloadSoapAssets();
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
   // readyEndsAt is a server timestamp — convert it to local time with the same
   // RTT-synced offset the music uses, so the countdown counts down (and the
   // ticks land) at the same real instant on every device.

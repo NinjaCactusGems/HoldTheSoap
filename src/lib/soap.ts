@@ -102,8 +102,9 @@ function drawBrand(ctx: CanvasRenderingContext2D, w: number, h: number, fill: st
   ctx.save();
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
-  ctx.font = '700 220px "Fredoka", ui-rounded, system-ui, sans-serif';
-  ctx.filter = 'blur(3px)';
+  // Size relative to the canvas so it fits whatever resolution we use.
+  ctx.font = `700 ${Math.round(h * 0.28)}px "Fredoka", ui-rounded, system-ui, sans-serif`;
+  ctx.filter = `blur(${Math.max(1, Math.round(w / 340))}px)`;
   ctx.fillStyle = fill;
   ctx.fillText('HOLD ME', w / 2, h / 2);
   ctx.restore();
@@ -123,8 +124,10 @@ export function makeSoapTextures(): {
   colorMap: CanvasTexture;
   normalMap: CanvasTexture;
 } {
-  const w = 1024;
-  const h = 768;
+  // 512×384 keeps the brand crisp while keeping the per-pixel normal-map loop
+  // (below) cheap enough to build during the Ready countdown.
+  const w = 512;
+  const h = 384;
 
   // --- Colour map: white base, darker-grey recessed text. ---
   const color = document.createElement('canvas');
