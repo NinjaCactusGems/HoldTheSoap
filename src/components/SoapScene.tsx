@@ -24,6 +24,9 @@ import { TILT_THRESHOLD_DEG } from '../hooks/useShakeDetector';
 // slides *uphill* on a real device, flip this to -1.
 const SLIP_SIGN = 1;
 
+// As the bar slides off, turn its face back toward screen centre by up to this.
+const MAX_FACE_TILT = (7 * Math.PI) / 180;
+
 /**
  * A full-screen, procedurally-generated 3D bar of soap (see ../lib/soap). Matte
  * soap material lit by cheap lights (no PMREM/env — that was the biggest startup
@@ -175,11 +178,12 @@ export default function SoapScene({
       tremble += (intensity - tremble) * 0.08;
 
       // Gentle idle sway (kept small so it stays within the fitted margin), plus
-      // a tremble that grows with movement.
+      // a tremble that grows with movement. Layered low-frequency sines (no
+      // per-frame randomness) keep the wobble organic but smooth, not jittery.
       const idleRotY = animated ? Math.sin(t * 0.4) * 0.12 : 0.08;
       const idleBob = animated ? Math.sin(t * 0.9) * 0.03 : 0;
       const jitter = animated
-        ? Math.sin(t * 34) * 0.05 * tremble + (Math.random() - 0.5) * 0.1 * tremble
+        ? (Math.sin(t * 11) * 0.6 + Math.sin(t * 6.5) * 0.4) * 0.04 * tremble
         : 0;
 
       // Slide toward the downhill edge as the phone tilts off flat, reaching
@@ -187,17 +191,21 @@ export default function SoapScene({
       // reversible until the threshold trips elimination upstream.
       const slipTarget = animated ? Math.min(tiltRef.current / TILT_THRESHOLD_DEG, 1) : 0;
       slip += (slipTarget - slip) * 0.12;
-      const slipX = SLIP_SIGN * tiltXRef.current * slip * slipDistance;
-      const slipY = SLIP_SIGN * tiltYRef.current * slip * slipDistance;
+      const dirX = SLIP_SIGN * tiltXRef.current;
+      const dirY = SLIP_SIGN * tiltYRef.current;
+      const slipX = dirX * slip * slipDistance;
+      const slipY = dirY * slip * slipDistance;
+      // Turn the face back toward screen centre (opposite the slide) as it goes.
+      const faceTilt = slip * MAX_FACE_TILT;
 
-      soap.rotation.x = baseRotX + jitter * 0.5;
-      soap.rotation.y = idleRotY + jitter;
-      soap.rotation.z = baseRotZ + jitter * 0.4 + slip * 0.3; // lean as it slides
-      soap.position.x = (animated ? Math.sin(t * 19) * 0.1 * tremble : 0) + slipX;
+      soap.rotation.x = baseRotX + jitter * 0.5 + dirY * faceTilt;
+      soap.rotation.y = idleRotY + jitter - dirX * faceTilt;
+      soap.rotation.z = baseRotZ + jitter * 0.4;
+      soap.position.x = (animated ? Math.sin(t * 9) * 0.08 * tremble : 0) + slipX;
       soap.position.y = idleBob + slipY;
 
       // Squash-stretch pulse around the fitted base scale, growing with tremble.
-      const squash = animated ? 1 + Math.sin(t * 26) * 0.04 * tremble : 1;
+      const squash = animated ? 1 + Math.sin(t * 12) * 0.035 * tremble : 1;
       soap.scale.set(baseScale, baseScale * squash, baseScale);
 
       glint.position.set(Math.cos(t * 0.7) * 4, 2 + Math.sin(t * 0.5) * 1.5, 4);
