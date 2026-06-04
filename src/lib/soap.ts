@@ -1,9 +1,10 @@
 // Procedural soap-bar assets, generated entirely in code (no model/image files).
 //
-// `makeSoapGeometry` builds a superellipsoid — a rounded "pillow" — which is the
-// classic bar-of-soap silhouette. `makeStampTexture` paints a canvas with a
-// debossed "HOLD THE SOAP" brand plus fine grain, used as a bump map so the
-// surface reads as real stamped soap.
+// `makeSoapGeometry` builds a superellipsoid — a rounded "pillow" — the classic
+// bar-of-soap silhouette (a chunky horizontal bar). `makeSoapTextures` paints
+// "HOLD ME" along the long side into BOTH a colour map (recess tinted darker, so
+// the engraving always reads) and a tangent-space normal map (the bevel), plus
+// faint grain.
 
 import {
   BufferGeometry,
@@ -18,14 +19,14 @@ function spow(v: number, p: number): number {
 }
 
 /**
- * A superellipsoid surface sampled into a BufferGeometry. With a roundness
- * exponent near ~0.35 and a flat-ish Y radius it looks like a pillowy bar of
- * soap. `half*` are the half-extents (length X, height Y, depth Z).
+ * A superellipsoid surface sampled into a BufferGeometry. The default extents
+ * make a chunky horizontal bar (X is the long axis). `half*` are the
+ * half-extents (length X, thickness Y, depth Z).
  */
 export function makeSoapGeometry(
   halfX = 1.0,
-  halfY = 0.32,
-  halfZ = 0.62,
+  halfY = 0.36,
+  halfZ = 0.78,
   roundness = 0.35,
   segU = 160,
   segV = 96,
@@ -56,9 +57,10 @@ export function makeSoapGeometry(
       positions[p++] = halfY * ny;
       positions[p++] = halfZ * nz;
       // Planar top-down (XZ) projection, so the stamp lies flat and readable on
-      // the broad top face; the thin side walls just get vertical streaks.
+      // the broad top face; the thin side walls just get vertical streaks. V is
+      // negated so the brand reads upright on the camera-facing face.
       uvs[t++] = nx * 0.5 + 0.5;
-      uvs[t++] = nz * 0.5 + 0.5;
+      uvs[t++] = -nz * 0.5 + 0.5;
     }
   }
 
@@ -95,42 +97,92 @@ function paintGrain(ctx: CanvasRenderingContext2D, w: number, h: number): void {
   }
 }
 
-/**
- * A bump map: mid-grey base (no displacement), darker debossed brand text, and
- * faint grain. Wrapped so the brand reads on the broad faces of the bar.
- */
-export function makeStampTexture(): CanvasTexture {
-  const w = 1024;
-  const h = 512;
-  const canvas = document.createElement('canvas');
-  canvas.width = w;
-  canvas.height = h;
-  const ctx = canvas.getContext('2d')!;
-
-  // Neutral mid-grey = flat surface for a bump map.
-  ctx.fillStyle = '#808080';
-  ctx.fillRect(0, 0, w, h);
-
-  paintGrain(ctx, w, h);
-
-  // Debossed brand: darker text = recessed. A soft light halo above sells the
-  // bevel. Rounded system font to match the app's Fredoka vibe.
+/** Draws the brand word centred and horizontal, blurred for a soft bevel ramp. */
+function drawBrand(
+  ctx: CanvasRenderingContext2D,
+  w: number,
+  h: number,
+  fill: string,
+  text: string,
+): void {
+  ctx.save();
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
-  const font = '700 96px "Fredoka", ui-rounded, system-ui, sans-serif';
+  // Size relative to the canvas so it fits whatever resolution we use.
+  ctx.font = `700 ${Math.round(h * 0.3)}px "Fredoka", ui-rounded, system-ui, sans-serif`;
+  ctx.filter = `blur(${Math.max(1, Math.round(w / 340))}px)`;
+  ctx.fillStyle = fill;
+  ctx.fillText(text, w / 2, h / 2);
+  ctx.restore();
+  ctx.filter = 'none';
+}
 
-  ctx.font = font;
-  // light bevel highlight, nudged up-left
-  ctx.fillStyle = 'rgba(255,255,255,0.55)';
-  ctx.fillText('HOLD', w / 2 - 2, h / 2 - 60 - 2);
-  ctx.fillText('THE SOAP', w / 2 - 2, h / 2 + 60 - 2);
-  // recessed dark body
-  ctx.fillStyle = 'rgba(40,40,40,0.95)';
-  ctx.fillText('HOLD', w / 2, h / 2 - 60);
-  ctx.fillText('THE SOAP', w / 2, h / 2 + 60);
+/**
+ * The soap's surface textures, both laid out identically so they line up:
+ *  - `colorMap`: white base with the recessed `label` tinted darker grey. Because
+ *    it multiplies the material's pink, the engraving always reads as a darker
+ *    recess regardless of lighting.
+ *  - `normalMap`: a tangent-space normal map from the `label` height field (+
+ *    grain) for the bevel, so the recess also catches light.
+ * The canvas is landscape (long U × short V) to match the horizontal bar.
+ */
+export function makeSoapTextures(label: string): {
+  colorMap: CanvasTexture;
+  normalMap: CanvasTexture;
+} {
+  // 512×384 keeps the brand crisp while keeping the per-pixel normal-map loop
+  // (below) cheap enough to build during the Ready countdown.
+  const w = 512;
+  const h = 384;
 
-  const tex = new CanvasTexture(canvas);
-  tex.colorSpace = SRGBColorSpace;
-  tex.anisotropy = 4;
-  return tex;
+  // --- Colour map: white base, darker-grey recessed text. ---
+  const color = document.createElement('canvas');
+  color.width = w;
+  color.height = h;
+  const cctx = color.getContext('2d')!;
+  cctx.fillStyle = '#ffffff';
+  cctx.fillRect(0, 0, w, h);
+  drawBrand(cctx, w, h, '#9f8e97', label); // multiplies pink → darker recess
+  const colorMap = new CanvasTexture(color);
+  colorMap.colorSpace = SRGBColorSpace;
+  colorMap.anisotropy = 4;
+
+  // --- Height field → normal map (bevel). ---
+  const height = document.createElement('canvas');
+  height.width = w;
+  height.height = h;
+  const hctx = height.getContext('2d')!;
+  hctx.fillStyle = '#808080';
+  hctx.fillRect(0, 0, w, h);
+  paintGrain(hctx, w, h);
+  drawBrand(hctx, w, h, '#0c0c0c', label); // dark = deep recess
+
+  const src = hctx.getImageData(0, 0, w, h).data;
+  const out = new ImageData(w, h);
+  const strength = 4;
+  const at = (x: number, y: number) => {
+    const cx = x < 0 ? 0 : x >= w ? w - 1 : x;
+    const cy = y < 0 ? 0 : y >= h ? h - 1 : y;
+    return src[(cy * w + cx) * 4] / 255; // red channel as height
+  };
+  for (let y = 0; y < h; y++) {
+    for (let x = 0; x < w; x++) {
+      const nx = (at(x - 1, y) - at(x + 1, y)) * strength;
+      const ny = (at(x, y - 1) - at(x, y + 1)) * strength;
+      const inv = 1 / Math.hypot(nx, ny, 1);
+      const i = (y * w + x) * 4;
+      out.data[i] = (nx * inv * 0.5 + 0.5) * 255;
+      out.data[i + 1] = (ny * inv * 0.5 + 0.5) * 255;
+      out.data[i + 2] = (inv * 0.5 + 0.5) * 255;
+      out.data[i + 3] = 255;
+    }
+  }
+  const normal = document.createElement('canvas');
+  normal.width = w;
+  normal.height = h;
+  normal.getContext('2d')!.putImageData(out, 0, 0);
+  const normalMap = new CanvasTexture(normal);
+  normalMap.anisotropy = 4; // linear data — must NOT be tagged sRGB
+
+  return { colorMap, normalMap };
 }

@@ -106,6 +106,24 @@ function ReadyView({
   toLocalTime: (serverTs: number) => number;
 }) {
   const { t } = useI18n();
+
+  // Warm the soap up during the countdown: download the three.js chunk and build
+  // the (cached) geometry + textures now, so nothing heavy runs the instant the
+  // hold phase begins.
+  useEffect(() => {
+    if (!webglAvailable()) return;
+    let cancelled = false;
+    const label = t('game.soapStamp');
+    void import('./SoapScene')
+      .then((m) => {
+        if (!cancelled) m.preloadSoapAssets(label);
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  }, [t]);
+
   // readyEndsAt is a server timestamp — convert it to local time with the same
   // RTT-synced offset the music uses, so the countdown counts down (and the
   // ticks land) at the same real instant on every device.
@@ -202,7 +220,7 @@ function HoldingView({
       {!iAmOut && webglAvailable() && (
         <SoapBoundary>
           <Suspense fallback={null}>
-            <SoapScene magnitude={detector.magnitude} />
+            <SoapScene magnitude={detector.magnitude} label={t('game.soapStamp')} />
           </Suspense>
         </SoapBoundary>
       )}
