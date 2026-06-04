@@ -17,6 +17,15 @@ export const TILT_THRESHOLD_DEG = 30;
 
 const RAD_TO_DEG = 180 / Math.PI;
 
+/** Current screen rotation in degrees (0/90/180/270), used to map device → screen. */
+function screenAngle(): number {
+  if (typeof screen !== 'undefined' && typeof screen.orientation?.angle === 'number') {
+    return screen.orientation.angle;
+  }
+  const legacy = (window as unknown as { orientation?: number }).orientation;
+  return typeof legacy === 'number' ? legacy : 0;
+}
+
 export function useShakeDetector(initialThreshold = 15) {
   const [started, setStarted] = useState(false);
   const [permissionState, setPermissionState] = useState<PermissionState>('idle');
@@ -96,10 +105,33 @@ export function useShakeDetector(initialThreshold = 15) {
       const gz = g.z ?? 0;
       const gm = Math.sqrt(gx * gx + gy * gy + gz * gz);
       if (gm > 0.0001) {
+        // Tilt magnitude is sign-independent (|gz|/|g|), so it's already correct
+        // on every platform.
         const tiltDeg = Math.acos(Math.min(1, Math.abs(gz) / gm)) * RAD_TO_DEG;
+
+        // Downhill direction. iOS reports accelerationIncludingGravity with the
+        // opposite sign to Android, but sign(gz) (+ screen-up on Android, − on
+        // iOS) captures that, so −sign(gz)·(gx,gy) is the true downhill on both.
         const planar = Math.sqrt(gx * gx + gy * gy);
-        const dx = planar > 0.0001 ? gx / planar : 0;
-        const dy = planar > 0.0001 ? gy / planar : 0;
+        let dx = 0;
+        let dy = 0;
+        if (planar > 0.0001) {
+          const s = gz >= 0 ? 1 : -1;
+          dx = (-s * gx) / planar;
+          dy = (-s * gy) / planar;
+          // Device axes are fixed to the hardware; rotate into screen space so
+          // the slide is correct in portrait or landscape.
+          const r = (screenAngle() * Math.PI) / 180;
+          if (r) {
+            const c = Math.cos(r);
+            const sn = Math.sin(r);
+            const rx = dx * c + dy * sn;
+            const ry = -dx * sn + dy * c;
+            dx = rx;
+            dy = ry;
+          }
+        }
+
         const a = TILT_SMOOTHING_ALPHA;
         tiltRef.current = a * tiltDeg + (1 - a) * tiltRef.current;
         tiltXRef.current = a * dx + (1 - a) * tiltXRef.current;

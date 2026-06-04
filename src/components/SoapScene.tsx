@@ -20,8 +20,10 @@ import {
 import { makeSoapGeometry, makeSoapTextures } from '../lib/soap';
 import { TILT_THRESHOLD_DEG } from '../hooks/useShakeDetector';
 
-// Sign for mapping the device's downhill direction to world space. If the soap
-// slides *uphill* on a real device, flip this to -1.
+// useShakeDetector returns the downhill direction already normalised to SCREEN
+// space and corrected for the Android/iOS sign convention, so +x = screen right
+// and +y = screen up map straight to world here. This is just a global safety
+// flip if the slide ever reads inverted on every device.
 const SLIP_SIGN = 1;
 
 // As the bar slides off, turn its face back toward screen centre by up to this.
