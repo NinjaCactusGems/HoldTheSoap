@@ -43,7 +43,7 @@ import { useI18n } from '../i18n/I18nContext';
 import { haptics } from '../lib/haptics';
 import { sfx } from '../lib/sfx';
 import { teamById, type TeamId } from '../lib/teams';
-import type { useShakeDetector } from '../hooks/useShakeDetector';
+import { TILT_THRESHOLD_DEG, type useShakeDetector } from '../hooks/useShakeDetector';
 
 export type Phase = 'lobby' | 'ready' | 'holding' | 'winner';
 export type Reaction = 'turd' | 'heart' | 'dancer' | 'dancerF';
@@ -207,6 +207,17 @@ function HoldingView({
     onEliminate();
   }, [detector.lastShakeAt, iAmOut, onEliminate]);
 
+  // Tilt the phone too far from flat (screen up) and the soap slides off — out.
+  // Shares firedRef with the shake rule so a round eliminates at most once.
+  useEffect(() => {
+    if (firedRef.current || iAmOut) return;
+    if (detector.tilt <= TILT_THRESHOLD_DEG) return;
+    firedRef.current = true;
+    haptics.elimination();
+    sfx.screech();
+    onEliminate();
+  }, [detector.tilt, iAmOut, onEliminate]);
+
   const aliveCount = players.filter((p) => !p.eliminated).length;
 
   return (
@@ -220,7 +231,13 @@ function HoldingView({
       {!iAmOut && webglAvailable() && (
         <SoapBoundary>
           <Suspense fallback={null}>
-            <SoapScene magnitude={detector.magnitude} label={t('game.soapStamp')} />
+            <SoapScene
+              magnitude={detector.magnitude}
+              tilt={detector.tilt}
+              tiltX={detector.tiltX}
+              tiltY={detector.tiltY}
+              label={t('game.soapStamp')}
+            />
           </Suspense>
         </SoapBoundary>
       )}

@@ -18,13 +18,19 @@ import {
   type CanvasTexture,
 } from 'three';
 import { makeSoapGeometry, makeSoapTextures } from '../lib/soap';
+import { TILT_THRESHOLD_DEG } from '../hooks/useShakeDetector';
+
+// Sign for mapping the device's downhill direction to world space. If the soap
+// slides *uphill* on a real device, flip this to -1.
+const SLIP_SIGN = 1;
 
 /**
  * A full-screen, procedurally-generated 3D bar of soap (see ../lib/soap). Matte
  * soap material lit by cheap lights (no PMREM/env — that was the biggest startup
- * hitch). The bar trembles in response to the live device-motion `magnitude`
- * (from useShakeDetector), so a shaky hand visibly makes the soap threaten to
- * slip. Mirrors Bubbles.tsx: respects reduced motion, pauses when hidden.
+ * hitch). The bar trembles with the live device-motion `magnitude` (a shaky
+ * hand), and slides toward the downhill edge as the phone `tilt`s off flat —
+ * fully off at the elimination threshold. Mirrors Bubbles.tsx: respects reduced
+ * motion, pauses when hidden.
  */
 
 // The procedural mesh + textures are built ONCE and reused. HoldingView remounts
@@ -52,15 +58,27 @@ export function preloadSoapAssets(label: string): void {
 
 export default function SoapScene({
   magnitude,
+  tilt,
+  tiltX,
+  tiltY,
   label,
 }: {
   magnitude: number;
+  tilt: number;
+  tiltX: number;
+  tiltY: number;
   label: string;
 }) {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
-  // Latest magnitude, read by the animation loop without re-running the effect.
+  // Latest live values, read by the animation loop without re-running the effect.
   const magRef = useRef(magnitude);
   magRef.current = magnitude;
+  const tiltRef = useRef(tilt);
+  tiltRef.current = tilt;
+  const tiltXRef = useRef(tiltX);
+  tiltXRef.current = tiltX;
+  const tiltYRef = useRef(tiltY);
+  tiltYRef.current = tiltY;
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -121,6 +139,9 @@ export default function SoapScene({
     const fitBox = new Box3();
     const fitSize = new Vector3();
     let baseScale = 1;
+    // World distance to move the bar's centre so it's fully off screen in any
+    // direction (used to map tilt → slide). Set in fit().
+    let slipDistance = 0;
     function fit() {
       const vFOV = MathUtils.degToRad(camera.fov);
       const visH = 2 * Math.tan(vFOV / 2) * camera.position.z;
@@ -134,6 +155,8 @@ export default function SoapScene({
       const fill = 0.96;
       baseScale = Math.min((visW * fill) / fitSize.x, (visH * fill) / fitSize.y);
       soap.scale.setScalar(baseScale);
+      slipDistance =
+        0.5 * Math.max(visW, visH) + 0.5 * Math.max(fitSize.x, fitSize.y) * baseScale;
     }
     fit();
 
@@ -142,6 +165,7 @@ export default function SoapScene({
     let rafId = 0;
     let running = false;
     let tremble = 0;
+    let slip = 0; // eased slide fraction (0 = centred, 1 = fully off at threshold)
 
     function frame(animated: boolean) {
       const t = clock.getElapsedTime();
@@ -158,11 +182,19 @@ export default function SoapScene({
         ? Math.sin(t * 34) * 0.05 * tremble + (Math.random() - 0.5) * 0.1 * tremble
         : 0;
 
+      // Slide toward the downhill edge as the phone tilts off flat, reaching
+      // fully off-screen at the elimination threshold. Eased for a smooth glide;
+      // reversible until the threshold trips elimination upstream.
+      const slipTarget = animated ? Math.min(tiltRef.current / TILT_THRESHOLD_DEG, 1) : 0;
+      slip += (slipTarget - slip) * 0.12;
+      const slipX = SLIP_SIGN * tiltXRef.current * slip * slipDistance;
+      const slipY = SLIP_SIGN * tiltYRef.current * slip * slipDistance;
+
       soap.rotation.x = baseRotX + jitter * 0.5;
       soap.rotation.y = idleRotY + jitter;
-      soap.rotation.z = baseRotZ + jitter * 0.4;
-      soap.position.y = idleBob;
-      soap.position.x = animated ? Math.sin(t * 19) * 0.1 * tremble : 0;
+      soap.rotation.z = baseRotZ + jitter * 0.4 + slip * 0.3; // lean as it slides
+      soap.position.x = (animated ? Math.sin(t * 19) * 0.1 * tremble : 0) + slipX;
+      soap.position.y = idleBob + slipY;
 
       // Squash-stretch pulse around the fitted base scale, growing with tremble.
       const squash = animated ? 1 + Math.sin(t * 26) * 0.04 * tremble : 1;

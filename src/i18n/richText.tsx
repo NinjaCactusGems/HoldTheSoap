@@ -8,8 +8,8 @@ export const howToPlayRules: Record<Locale, (() => ReactNode)[]> = {
   en: [
     () => (
       <>
-        Hold your phone out, <strong>away from your body</strong>, and keep it
-        steady.
+        Hold your phone <strong>flat, screen up</strong> — like balancing the
+        soap on your palm — and keep it level.
       </>
     ),
     () => (
@@ -21,7 +21,8 @@ export const howToPlayRules: Record<Locale, (() => ReactNode)[]> = {
     () => (
       <>
         Make rivals move too quickly — a <strong>touch on the arm</strong> is
-        fair game. Move your phone too fast and you're out.
+        fair game. <strong>Tilt past 30°</strong> or jerk your phone and the soap
+        slips off — you're out.
       </>
     ),
     () => (
@@ -33,8 +34,9 @@ export const howToPlayRules: Record<Locale, (() => ReactNode)[]> = {
   de: [
     () => (
       <>
-        Halte dein Handy <strong>hinter deinem Körper</strong> und halte es
-        ruhig.
+        Halte dein Handy <strong>flach, mit dem Bildschirm nach oben</strong> —
+        als würdest du die Seife auf der Handfläche balancieren — und halte es
+        waagerecht.
       </>
     ),
     () => (
@@ -46,8 +48,9 @@ export const howToPlayRules: Record<Locale, (() => ReactNode)[]> = {
     () => (
       <>
         Bring deine Rivalen dazu, sich zu schnell zu bewegen — eine{' '}
-        <strong>Berührung am Arm</strong> ist erlaubt. Bewegst du dein Handy zu
-        schnell, bist du raus.
+        <strong>Berührung am Arm</strong> ist erlaubt.{' '}
+        <strong>Kippst du mehr als 30°</strong> oder ruckelst du, rutscht die
+        Seife weg — du bist raus.
       </>
     ),
     () => (

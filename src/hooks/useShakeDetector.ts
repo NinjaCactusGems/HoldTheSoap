@@ -8,8 +8,14 @@ interface DeviceMotionEventWithPermission {
 }
 
 const SMOOTHING_ALPHA = 0.3;
+const TILT_SMOOTHING_ALPHA = 0.2;
 const DEBOUNCE_MS = 500;
 const GRAVITY = 9.81;
+
+/** Tilt (degrees from flat/screen-up) past which the soap slides off / drops. */
+export const TILT_THRESHOLD_DEG = 30;
+
+const RAD_TO_DEG = 180 / Math.PI;
 
 export function useShakeDetector(initialThreshold = 15) {
   const [started, setStarted] = useState(false);
@@ -18,11 +24,19 @@ export function useShakeDetector(initialThreshold = 15) {
   const [threshold, setThreshold] = useState(initialThreshold);
   const [shakeCount, setShakeCount] = useState(0);
   const [lastShakeAt, setLastShakeAt] = useState<number | null>(null);
+  // Orientation: tilt away from flat (screen-up), plus the unit downhill
+  // direction the soap should slide (device-screen coords; 0,0 when flat).
+  const [tilt, setTilt] = useState(0);
+  const [tiltX, setTiltX] = useState(0);
+  const [tiltY, setTiltY] = useState(0);
 
   // Refs hold the high-frequency state so 60-100Hz sensor events
   // don't trigger a React re-render per sample. The rAF loop below
   // copies the smoothed value into React state at ~60Hz max.
   const smoothedRef = useRef(0);
+  const tiltRef = useRef(0);
+  const tiltXRef = useRef(0);
+  const tiltYRef = useRef(0);
   const thresholdRef = useRef(initialThreshold);
   const cooldownUntilRef = useRef(0);
   const wasAboveRef = useRef(false);
@@ -70,6 +84,28 @@ export function useShakeDetector(initialThreshold = 15) {
       setLastShakeAt(ts);
       setShakeCount((c) => c + 1);
     }
+
+    // Orientation from the gravity vector. While the phone is roughly still
+    // (the intent during "hold"), accelerationIncludingGravity ≈ gravity, so
+    // the tilt away from flat is the angle between it and the screen normal
+    // (z). The in-plane part (gx, gy) is the downhill direction the soap slides.
+    const g = e.accelerationIncludingGravity;
+    if (g && (g.x !== null || g.y !== null || g.z !== null)) {
+      const gx = g.x ?? 0;
+      const gy = g.y ?? 0;
+      const gz = g.z ?? 0;
+      const gm = Math.sqrt(gx * gx + gy * gy + gz * gz);
+      if (gm > 0.0001) {
+        const tiltDeg = Math.acos(Math.min(1, Math.abs(gz) / gm)) * RAD_TO_DEG;
+        const planar = Math.sqrt(gx * gx + gy * gy);
+        const dx = planar > 0.0001 ? gx / planar : 0;
+        const dy = planar > 0.0001 ? gy / planar : 0;
+        const a = TILT_SMOOTHING_ALPHA;
+        tiltRef.current = a * tiltDeg + (1 - a) * tiltRef.current;
+        tiltXRef.current = a * dx + (1 - a) * tiltXRef.current;
+        tiltYRef.current = a * dy + (1 - a) * tiltYRef.current;
+      }
+    }
   }, []);
 
   const start = useCallback(async () => {
@@ -105,6 +141,9 @@ export function useShakeDetector(initialThreshold = 15) {
     if (!started) return;
     const tick = () => {
       setMagnitude(smoothedRef.current);
+      setTilt(tiltRef.current);
+      setTiltX(tiltXRef.current);
+      setTiltY(tiltYRef.current);
       rafRef.current = requestAnimationFrame(tick);
     };
     rafRef.current = requestAnimationFrame(tick);
@@ -132,5 +171,8 @@ export function useShakeDetector(initialThreshold = 15) {
     setThreshold,
     shakeCount,
     lastShakeAt,
+    tilt,
+    tiltX,
+    tiltY,
   };
 }
