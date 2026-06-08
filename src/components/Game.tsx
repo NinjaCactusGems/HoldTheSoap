@@ -1,49 +1,10 @@
-import {
-  Component,
-  lazy,
-  Suspense,
-  useEffect,
-  useRef,
-  useState,
-  type ReactNode,
-} from 'react';
+import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { Bubbles } from './Bubbles';
-
-// three.js + the soap scene live in their own lazy chunk, loaded only when an
-// alive player enters the hold phase — it never weighs down the initial bundle.
-const SoapScene = lazy(() => import('./SoapScene'));
-
-// Probe WebGL once; if unavailable we fall back to the flat pink background.
-let webglMemo: boolean | null = null;
-function webglAvailable(): boolean {
-  if (webglMemo !== null) return webglMemo;
-  try {
-    const c = document.createElement('canvas');
-    webglMemo = !!(
-      window.WebGLRenderingContext &&
-      (c.getContext('webgl') || c.getContext('experimental-webgl'))
-    );
-  } catch {
-    webglMemo = false;
-  }
-  return webglMemo;
-}
-
-// If the scene (or its chunk) ever throws, drop silently to the pink fallback.
-class SoapBoundary extends Component<{ children: ReactNode }, { failed: boolean }> {
-  state = { failed: false };
-  static getDerivedStateFromError() {
-    return { failed: true };
-  }
-  render() {
-    return this.state.failed ? null : this.props.children;
-  }
-}
 import { useI18n } from '../i18n/I18nContext';
 import { haptics } from '../lib/haptics';
 import { sfx } from '../lib/sfx';
 import { teamById, type TeamId } from '../lib/teams';
-import type { useShakeDetector } from '../hooks/useShakeDetector';
+import { TILT_THRESHOLD_DEG, type useShakeDetector } from '../hooks/useShakeDetector';
 
 export type Phase = 'lobby' | 'ready' | 'holding' | 'winner';
 export type Reaction = 'turd' | 'heart' | 'dancer' | 'dancerF';
@@ -107,23 +68,6 @@ function ReadyView({
 }) {
   const { t } = useI18n();
 
-  // Warm the soap up during the countdown: download the three.js chunk and build
-  // the (cached) geometry + textures now, so nothing heavy runs the instant the
-  // hold phase begins.
-  useEffect(() => {
-    if (!webglAvailable()) return;
-    let cancelled = false;
-    const label = t('game.soapStamp');
-    void import('./SoapScene')
-      .then((m) => {
-        if (!cancelled) m.preloadSoapAssets(label);
-      })
-      .catch(() => {});
-    return () => {
-      cancelled = true;
-    };
-  }, [t]);
-
   // readyEndsAt is a server timestamp — convert it to local time with the same
   // RTT-synced offset the music uses, so the countdown counts down (and the
   // ticks land) at the same real instant on every device.
@@ -172,10 +116,10 @@ function ReadyView({
   );
 }
 
-// Fraction of the active threshold at which we warn the player to steady up.
-// One smoothed magnitude/threshold covers both sensor paths (gravity-removed
-// `acceleration` and the gravity-included fallback), so this single check
-// applies regardless of which the device reports.
+// Fraction of each drop threshold at which we warn the player to steady up.
+// A round can end two ways — too much shake (acceleration) or too much tilt
+// (gravity/orientation) — so the warning watches 60% of both: the shake
+// magnitude vs its threshold, and the tilt vs TILT_THRESHOLD_DEG.
 const WARN_FRACTION = 0.6;
 // Re-arm the warning haptic only once motion settles back below this lower band
 // (hysteresis), so sensor noise around the boundary doesn't re-fire it.
@@ -202,10 +146,13 @@ function HoldingView({
   // Whether the "be careful" haptic is armed to fire on the next 60% crossing.
   const warnArmedRef = useRef(true);
 
-  // Live "be careful" state: text shown while above 60% of the threshold; a
-  // single warn pulse fires on each rising crossing and re-arms below the band.
-  const warnLevel = detector.threshold * WARN_FRACTION;
-  const nearLimit = !iAmOut && detector.magnitude >= warnLevel;
+  // Live "be careful" state: text shown while shake or tilt is above 60% of its
+  // threshold; a single warn pulse fires on each rising crossing into that band
+  // and re-arms once both settle back below it.
+  const nearLimit =
+    !iAmOut &&
+    (detector.magnitude >= detector.threshold * WARN_FRACTION ||
+      detector.tilt >= TILT_THRESHOLD_DEG * WARN_FRACTION);
 
   // "Go" buzz: fired here (rather than at the countdown's racy 0) so it
   // reliably lands exactly when the hold phase begins.
@@ -223,15 +170,31 @@ function HoldingView({
     onEliminate();
   }, [detector.lastShakeAt, iAmOut, onEliminate]);
 
+  // Tilt the phone too far from flat (screen up) and the soap slides off — out.
+  // Shares firedRef with the shake rule so a round eliminates at most once.
+  useEffect(() => {
+    if (firedRef.current || iAmOut) return;
+    if (detector.tilt <= TILT_THRESHOLD_DEG) return;
+    firedRef.current = true;
+    haptics.elimination();
+    sfx.screech();
+    onEliminate();
+  }, [detector.tilt, iAmOut, onEliminate]);
+
+  // "Be careful" cue: fire a single warn pulse when motion crosses 60% of
+  // either threshold, re-arming only once both settle back below the band.
   useEffect(() => {
     if (iAmOut) return;
     if (nearLimit && warnArmedRef.current) {
       warnArmedRef.current = false;
       haptics.warn();
-    } else if (detector.magnitude < detector.threshold * WARN_REARM_FRACTION) {
+    } else if (
+      detector.magnitude < detector.threshold * WARN_REARM_FRACTION &&
+      detector.tilt < TILT_THRESHOLD_DEG * WARN_REARM_FRACTION
+    ) {
       warnArmedRef.current = true;
     }
-  }, [detector.magnitude, detector.threshold, nearLimit, iAmOut]);
+  }, [detector.magnitude, detector.tilt, detector.threshold, nearLimit, iAmOut]);
 
   const aliveCount = players.filter((p) => !p.eliminated).length;
 
@@ -241,14 +204,17 @@ function HoldingView({
         iAmOut ? 'bg-dropped text-ink' : 'bg-hold text-white'
       }`}
     >
-      {/* Alive: a full-screen 3D bar of soap behind the foam, brand embossed in
-          the mesh. Falls back to the flat pink background if WebGL is missing. */}
-      {!iAmOut && webglAvailable() && (
-        <SoapBoundary>
-          <Suspense fallback={null}>
-            <SoapScene magnitude={detector.magnitude} label={t('game.soapStamp')} />
-          </Suspense>
-        </SoapBoundary>
+      {/* Alive: a faint, oversized SOAP watermark turned on its side, blended
+          into the pink so it reads as texture rather than text. */}
+      {!iAmOut && (
+        <div
+          aria-hidden
+          className="pointer-events-none absolute inset-0 z-0 flex select-none items-center justify-center overflow-hidden"
+        >
+          <span className="-rotate-90 whitespace-nowrap font-round text-[32vh] font-bold leading-none tracking-tight text-white/10">
+            {t('game.soapStamp')}
+          </span>
+        </div>
       )}
       <Bubbles />
       {iAmOut ? (
@@ -270,7 +236,7 @@ function HoldingView({
               ⚠️ {t('game.careful')}
             </div>
           )}
-          <div className="pointer-events-none absolute inset-x-0 bottom-[9vh] z-10 text-center font-round text-2xl font-semibold uppercase tracking-[0.35em] text-white/75 [text-shadow:0_1px_8px_rgba(0,0,0,0.25)]">
+          <div className="pointer-events-none absolute inset-x-0 bottom-[9vh] z-10 px-8 text-center font-round text-xl font-semibold text-white/85 [text-shadow:0_1px_8px_rgba(0,0,0,0.25)]">
             {t('game.hold')}
           </div>
         </>
