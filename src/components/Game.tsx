@@ -172,6 +172,15 @@ function ReadyView({
   );
 }
 
+// Fraction of the active threshold at which we warn the player to steady up.
+// One smoothed magnitude/threshold covers both sensor paths (gravity-removed
+// `acceleration` and the gravity-included fallback), so this single check
+// applies regardless of which the device reports.
+const WARN_FRACTION = 0.6;
+// Re-arm the warning haptic only once motion settles back below this lower band
+// (hysteresis), so sensor noise around the boundary doesn't re-fire it.
+const WARN_REARM_FRACTION = WARN_FRACTION * 0.8;
+
 // Holding: hold still. A motion spike above the Normal threshold (wired in
 // Room as useShakeDetector(7)) reports elimination to the server. Full-screen
 // olive while you're in, red the moment you're out — readable across a room.
@@ -190,6 +199,13 @@ function HoldingView({
   const startedAtRef = useRef<number>(Date.now());
   // Fire elimination at most once per round (the view remounts each round).
   const firedRef = useRef(false);
+  // Whether the "be careful" haptic is armed to fire on the next 60% crossing.
+  const warnArmedRef = useRef(true);
+
+  // Live "be careful" state: text shown while above 60% of the threshold; a
+  // single warn pulse fires on each rising crossing and re-arms below the band.
+  const warnLevel = detector.threshold * WARN_FRACTION;
+  const nearLimit = !iAmOut && detector.magnitude >= warnLevel;
 
   // "Go" buzz: fired here (rather than at the countdown's racy 0) so it
   // reliably lands exactly when the hold phase begins.
@@ -206,6 +222,16 @@ function HoldingView({
     sfx.screech();
     onEliminate();
   }, [detector.lastShakeAt, iAmOut, onEliminate]);
+
+  useEffect(() => {
+    if (iAmOut) return;
+    if (nearLimit && warnArmedRef.current) {
+      warnArmedRef.current = false;
+      haptics.warn();
+    } else if (detector.magnitude < detector.threshold * WARN_REARM_FRACTION) {
+      warnArmedRef.current = true;
+    }
+  }, [detector.magnitude, detector.threshold, nearLimit, iAmOut]);
 
   const aliveCount = players.filter((p) => !p.eliminated).length;
 
@@ -238,9 +264,16 @@ function HoldingView({
           </div>
         </div>
       ) : (
-        <div className="pointer-events-none absolute inset-x-0 bottom-[9vh] z-10 text-center font-round text-2xl font-semibold uppercase tracking-[0.35em] text-white/75 [text-shadow:0_1px_8px_rgba(0,0,0,0.25)]">
-          {t('game.hold')}
-        </div>
+        <>
+          {nearLimit && (
+            <div className="pointer-events-none absolute inset-x-0 top-[14vh] z-10 animate-pulse text-center font-round text-3xl font-bold uppercase tracking-[0.2em] text-ochre [text-shadow:0_1px_10px_rgba(0,0,0,0.35)]">
+              ⚠️ {t('game.careful')}
+            </div>
+          )}
+          <div className="pointer-events-none absolute inset-x-0 bottom-[9vh] z-10 text-center font-round text-2xl font-semibold uppercase tracking-[0.35em] text-white/75 [text-shadow:0_1px_8px_rgba(0,0,0,0.25)]">
+            {t('game.hold')}
+          </div>
+        </>
       )}
     </div>
   );
