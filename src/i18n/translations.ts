@@ -56,6 +56,8 @@ export const en = {
   'game.teamWins': '{team} win!',
   'game.noOne': 'No one',
   'game.backToLobby': 'Back to lobby in {seconds}…',
+
+  'footer.privacy': 'Privacy',
 } as const;
 
 export type TranslationKey = keyof typeof en;
@@ -113,6 +115,8 @@ export const de: Record<TranslationKey, string> = {
   'game.teamWins': '{team} gewinnt!',
   'game.noOne': 'Niemand',
   'game.backToLobby': 'Zurück zur Lobby in {seconds}…',
+
+  'footer.privacy': 'Datenschutz',
 };
 
 export const dict = { en, de } as const;

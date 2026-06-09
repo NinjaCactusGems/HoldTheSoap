@@ -39,6 +39,12 @@ Notes for workflows:
 - Keep infrastructure-as-code (wrangler.toml, workflow files) in the repo so deploys are reproducible. Cloudflare's Git integration is intentionally not used — the repo is the source of truth.
 - See `README.md` for one-time setup (Pages project pre-creation, custom domain attach, token scope check).
 
+## Privacy policy
+
+The privacy policy lives at `holdthesoap.com/privacy`. It is a standalone, English-only static page at `public/privacy.html` (served directly by Cloudflare Pages as a real asset — deliberately **not** a React/SPA route, so it resolves with one well-defined request and no rewrite/redirect ambiguity). Its styling mirrors the theme tokens in `src/index.css`. It is reachable from the home-page footer link.
+
+**Keep it in sync:** any change that adds, removes, or alters how personal data is collected, processed, stored, or shared — e.g. new device sensors, analytics, third-party scripts or fonts, cookies, persisted fields, new sub-processors, or sending previously on-device data to the server — **must update `public/privacy.html` (including its "Last updated" date) in the same PR.** If unsure whether a feature is privacy-affecting, assume it is and review the policy.
+
 ## Gameplay
 
 ### Shake-detection thresholds

@@ -6,6 +6,7 @@ import { useI18n } from './i18n/I18nContext';
 
 export default function App() {
   const { t } = useI18n();
+
   return (
     <div className="relative min-h-dvh bg-sky text-ink flex flex-col">
       <Bubbles />
@@ -22,6 +23,15 @@ export default function App() {
 
         <HowToPlay />
         <Lobby />
+
+        <footer className="mt-auto pt-6">
+          <a
+            href="/privacy"
+            className="text-xs font-semibold uppercase tracking-wider text-ink-muted hover:text-ink transition"
+          >
+            {t('footer.privacy')}
+          </a>
+        </footer>
       </main>
     </div>
   );
