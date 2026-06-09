@@ -61,11 +61,11 @@ export const en = {
 export type TranslationKey = keyof typeof en;
 
 export const de: Record<TranslationKey, string> = {
-  'app.title': 'Halte die Seife',
+  'app.title': 'HALTE DIE SEIFE',
 
   'howToPlay.title': 'Spielanleitung',
   'howToPlay.intro':
-    'HOLD THE SOAP ist ein Bewegungs- und Balance-Spiel, gespielt in der echten Welt mit dem Handy in der Hand.',
+    'HALTE DIE SEIFE ist ein Bewegungs- und Balance-Spiel, das in der echten Welt und mit dem Handy in der Hand gespielt wird.',
 
   'lobby.create': 'Gruppe erstellen',
   'lobby.or': 'oder',
