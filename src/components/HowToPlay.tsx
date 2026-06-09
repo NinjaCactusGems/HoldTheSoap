@@ -78,16 +78,14 @@ function BulletFigure({ n }: { n: 1 | 2 | 3 | 4 }) {
   };
   const ink = 'h-9 w-auto text-ink opacity-40';
 
-  // 1) Hold it flat, screen up: a phone lying level (olive screen) resting on an
-  // open palm — like balancing the bar of soap on your hand.
+  // 1) Hold it flat, screen up: a phone lying level (olive screen) held out on an
+  // arm — like balancing the bar of soap on your hand.
   if (n === 1) {
     return (
       <svg {...base} className="h-10 w-auto text-ink opacity-90">
-        {/* forearm into an open, flat palm */}
-        <path d="M4 39 Q12 38 18 35" />
-        {/* open palm: top surface, fingertips peeking past the phone, underside, heel */}
-        <path d="M18 35 Q44 31 66 29 Q74 28 79 31 Q75 35 68 35 Q44 38 24 38 Q18 38 16 35 Z" />
-        {/* the phone lying flat on the palm, screen up */}
+        {/* arm rising to hold the phone out flat */}
+        <path d="M12 42 Q16 32 30 29" />
+        {/* the phone lying flat, screen up */}
         <path d="M22 27 L54 22 L70 28 L38 33 Z" />
         {/* olive screen, matching the in-game hold colour */}
         <path
