@@ -65,7 +65,7 @@ export const de: Record<TranslationKey, string> = {
 
   'howToPlay.title': 'Spielanleitung',
   'howToPlay.intro':
-    'HALTE DIE SEIFE ist ein Spiel aus Bewegung und Balance, das in der echten Welt und mit dem Handy in der Hand gespielt wird.',
+    'HALTE DIE SEIFE ist ein Bewegungs- und Balance-Spiel, das in der echten Welt und mit dem Handy in der Hand gespielt wird.',
 
   'lobby.create': 'Gruppe erstellen',
   'lobby.or': 'oder',
