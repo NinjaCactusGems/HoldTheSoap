@@ -21,8 +21,8 @@ export const howToPlayRules: Record<Locale, (() => ReactNode)[]> = {
     () => (
       <>
         Make rivals move too quickly. A <strong>touch on the arm</strong> is
-        fair game. <strong>Tilt past 30°</strong> or jerk your phone and the soap
-        slips off, so you're out.
+        fair game. If you <strong>tilt or jerk your phone</strong> the soap
+        slips off.
       </>
     ),
     () => (
