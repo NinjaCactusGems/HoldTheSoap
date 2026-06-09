@@ -48,9 +48,8 @@ export const howToPlayRules: Record<Locale, (() => ReactNode)[]> = {
     () => (
       <>
         Bring deine Rivalen dazu, sich zu schnell zu bewegen. Eine{' '}
-        <strong>Berührung am Arm</strong> ist erlaubt.{' '}
-        <strong>Kippst du mehr als 30°</strong> oder ruckelst du, rutscht die
-        Seife weg und du bist raus.
+        <strong>Berührung am Arm</strong> ist erlaubt. Wenn du{' '}
+        <strong>dein Handy kippst oder ruckelst</strong>, rutscht die Seife weg.
       </>
     ),
     () => (
