@@ -66,8 +66,9 @@ jobs:
           message: |
             ### Cloudflare Pages preview deployed
 
-            - **URL:** ${{ steps.deploy.outputs.deployment-url }}
+            - **Preview:** ${{ steps.deploy.outputs.deployment-url }}
+            - **Preview (testing mode):** ${{ steps.deploy.outputs.deployment-url }}/?test=1
             - **Commit:** ${{ github.event.pull_request.head.sha }}
             - **Branch:** `${{ github.head_ref }}`
 
-            The preview is rebuilt on every push to this PR.
+            Testing mode adds lobby controls for self-eliminating bots. The preview is rebuilt on every push to this PR.
