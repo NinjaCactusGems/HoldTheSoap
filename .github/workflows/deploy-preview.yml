@@ -25,18 +25,21 @@ jobs:
 
       - run: npm ci
 
-      - name: Resolve party host
+      # Previews run against their own party Worker (holdthesoap-party-preview),
+      # NOT the production one, so server-side changes on a PR can be exercised
+      # without touching live prod. It's a single shared preview Worker —
+      # rooms are per-code Durable Objects, and each preview push redeploys it
+      # with that branch's code, so the most recently pushed PR's server wins.
+      - name: Resolve preview party host
         id: party-host
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_KEY }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          PARTY_HOST_OVERRIDE: ${{ vars.PARTY_HOST }}
         run: |
           set -eo pipefail
-          if [ -n "$PARTY_HOST_OVERRIDE" ]; then
-            echo "value=$PARTY_HOST_OVERRIDE" >> "$GITHUB_OUTPUT"
-            exit 0
-          fi
+          # Always derive the preview Worker's workers.dev host (the prod
+          # PARTY_HOST override is intentionally ignored here — using it would
+          # point previews back at the production Worker and defeat isolation).
           BODY=$(curl -sS -H "Authorization: Bearer $CLOUDFLARE_API_TOKEN" \
             "https://api.cloudflare.com/client/v4/accounts/$CLOUDFLARE_ACCOUNT_ID/workers/subdomain")
           SUB=$(echo "$BODY" | jq -r '.result.subdomain // empty')
@@ -45,7 +48,15 @@ jobs:
             echo "value=" >> "$GITHUB_OUTPUT"
             exit 0
           fi
-          echo "value=holdthesoap-party.${SUB}.workers.dev" >> "$GITHUB_OUTPUT"
+          echo "value=holdthesoap-party-preview.${SUB}.workers.dev" >> "$GITHUB_OUTPUT"
+
+      - name: Deploy preview party worker
+        if: steps.party-host.outputs.value != ''
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_KEY }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          command: deploy --config party/wrangler.toml --name holdthesoap-party-preview
 
       - run: npm run build
         env:

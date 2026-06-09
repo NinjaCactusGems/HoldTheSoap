@@ -33,8 +33,8 @@ Notes for workflows:
 
 - Default branch: `main`.
 - Deploy flow:
-  - Push to `main` → `.github/workflows/deploy-prod.yml` deploys to `holdthesoap.com`.
-  - Open / push to a PR → `.github/workflows/deploy-preview.yml` deploys a preview to `<branch>.holdthesoap.pages.dev` and posts the URL as a sticky comment.
+  - Push to `main` → `.github/workflows/deploy-prod.yml` deploys the production party Worker (`holdthesoap-party`) and the Pages site to `holdthesoap.com`.
+  - Open / push to a PR → `.github/workflows/deploy-preview.yml` deploys the Pages preview to `<branch>.holdthesoap.pages.dev` **and** a separate, isolated party Worker (`holdthesoap-party-preview`) that the preview build points at. This keeps server-side (`party/server.ts`) changes testable on a PR without touching production. It's a single shared preview Worker (rooms are per-code Durable Objects); each preview push redeploys it with that branch's code, so the most recently pushed PR's server wins. The sticky comment posts both the normal and `?test=1` preview URLs.
   - All PRs and pushes to `main` also run `.github/workflows/ci.yml` (lint, typecheck, build).
 - Keep infrastructure-as-code (wrangler.toml, workflow files) in the repo so deploys are reproducible. Cloudflare's Git integration is intentionally not used — the repo is the source of truth.
 - See `README.md` for one-time setup (Pages project pre-creation, custom domain attach, token scope check).
