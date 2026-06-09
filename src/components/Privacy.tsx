@@ -9,7 +9,7 @@ import { useEffect } from 'react';
 // collected, processed, stored, or shared, update this policy and the
 // "Last updated" date below in the same change (see CLAUDE.md).
 
-const CONTACT_EMAIL = 'robin@uma.games';
+const CONTACT_EMAIL = 'Robin.daraban@gmail.com';
 const CONTACT_NAME = 'Robin Daraban';
 const LAST_UPDATED = '9 June 2026';
 
