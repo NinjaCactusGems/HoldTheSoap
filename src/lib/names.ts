@@ -1,45 +1,26 @@
-// Friendly player names: a musical adjective + a vegetable, e.g. "Melodic Paprika".
+// Friendly player names: two distinct soap scents, e.g. "Lavender Citrus".
 
-const MUSICAL_ADJECTIVES = [
-  'Melodic',
-  'Harmonic',
-  'Rhythmic',
-  'Syncopated',
-  'Mellow',
-  'Vibrant',
-  'Lyrical',
-  'Resonant',
-  'Upbeat',
-  'Sonorous',
-  'Jazzy',
-  'Funky',
-  'Soulful',
-  'Bluesy',
-  'Operatic',
-  'Acoustic',
-  'Groovy',
-  'Punchy',
-];
-
-const VEGETABLES = [
-  'Paprika',
-  'Aubergine',
-  'Radish',
-  'Parsnip',
-  'Shallot',
-  'Fennel',
-  'Kohlrabi',
-  'Endive',
-  'Okra',
-  'Artichoke',
-  'Courgette',
-  'Beetroot',
-  'Pumpkin',
-  'Leek',
-  'Turnip',
-  'Chard',
-  'Squash',
-  'Pak Choi',
+const SCENTS = [
+  'Lavender',
+  'Vanilla',
+  'Citrus',
+  'Rose',
+  'Sandalwood',
+  'Eucalyptus',
+  'Mint',
+  'Jasmine',
+  'Coconut',
+  'Lemon',
+  'Almond',
+  'Honey',
+  'Oatmeal',
+  'Aloe',
+  'Cedar',
+  'Bergamot',
+  'Lemongrass',
+  'Ginger',
+  'Cucumber',
+  'Shea',
 ];
 
 function pick<T>(list: T[]): T {
@@ -49,5 +30,9 @@ function pick<T>(list: T[]): T {
 }
 
 export function generateRandomName(): string {
-  return `${pick(MUSICAL_ADJECTIVES)} ${pick(VEGETABLES)}`;
+  const first = pick(SCENTS);
+  // Pick the second scent from everything but the first, so we never repeat
+  // ("Lavender Lavender").
+  const second = pick(SCENTS.filter((s) => s !== first));
+  return `${first} ${second}`;
 }
