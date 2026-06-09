@@ -9,9 +9,12 @@ export default function App() {
   const { t } = useI18n();
 
   // No router: the privacy policy is a separate full page reached by an ordinary
-  // link (with a _redirects rule serving the SPA on a cold hit). Everything else
-  // is the game home screen.
-  if (typeof window !== 'undefined' && window.location.pathname === '/privacy') {
+  // link (with a _redirects rule serving the SPA on a cold hit). Cloudflare Pages
+  // normalizes /privacy → /privacy/ with a trailing slash, so match either form.
+  if (
+    typeof window !== 'undefined' &&
+    window.location.pathname.replace(/\/+$/, '') === '/privacy'
+  ) {
     return <Privacy />;
   }
 
