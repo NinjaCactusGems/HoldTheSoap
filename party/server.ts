@@ -8,18 +8,18 @@ type Reaction = 'turd' | 'heart' | 'dancer' | 'dancerF';
 // for the whole room at once. See src/lib/tempo.ts for the client-side targets.
 type Tempo = 'normal' | 'fast' | 'slow';
 
-// Team identifiers (exotic cute animals). The id list is duplicated here from
-// src/lib/teams.ts (which also carries the labels/colors the client renders),
+// Team identifiers (places where soap gets used). The id list is duplicated here
+// from src/lib/teams.ts (which also carries the labels/colors the client renders),
 // mirroring how REACTIONS is duplicated — the server only needs to validate ids.
 type TeamId =
-  | 'axolotl'
-  | 'quokka'
-  | 'pangolin'
-  | 'fennec'
-  | 'redpanda'
-  | 'sugarglider'
-  | 'capybara'
-  | 'narwhal';
+  | 'shower'
+  | 'sink'
+  | 'bathtub'
+  | 'toilet'
+  | 'basin'
+  | 'bidet'
+  | 'kitchen'
+  | 'hottub';
 
 type Player = {
   id: string;
@@ -72,14 +72,14 @@ const READY_DURATION_MS = 5000;
 const WINNER_DURATION_MS = 10000;
 const REACTIONS: readonly Reaction[] = ['turd', 'heart', 'dancer', 'dancerF'];
 const TEAM_IDS: readonly TeamId[] = [
-  'axolotl',
-  'quokka',
-  'pangolin',
-  'fennec',
-  'redpanda',
-  'sugarglider',
-  'capybara',
-  'narwhal',
+  'shower',
+  'sink',
+  'bathtub',
+  'toilet',
+  'basin',
+  'bidet',
+  'kitchen',
+  'hottub',
 ];
 // Teams only matter once the room is at least this big; below it, every player
 // is treated as their own side (preserving the free-for-all and solo+Johann
