@@ -8,7 +8,7 @@ export const en = {
 
   'howToPlay.title': 'How to play',
   'howToPlay.intro':
-    'HOLD THE SOAP is a game of movement and balance — played in the real world, phone in hand.',
+    'HOLD THE SOAP is a game of movement and balance that you play in the real world with your phone in hand.',
 
   'lobby.create': 'Create group',
   'lobby.or': 'or',
@@ -65,7 +65,7 @@ export const de: Record<TranslationKey, string> = {
 
   'howToPlay.title': 'Spielanleitung',
   'howToPlay.intro':
-    'HALTE DIE SEIFE ist ein Bewegungs- und Balance-Spiel, das in der echten Welt und mit dem Handy in der Hand gespielt wird.',
+    'HALTE DIE SEIFE ist ein Spiel aus Bewegung und Balance, das in der echten Welt und mit dem Handy in der Hand gespielt wird.',
 
   'lobby.create': 'Gruppe erstellen',
   'lobby.or': 'oder',
