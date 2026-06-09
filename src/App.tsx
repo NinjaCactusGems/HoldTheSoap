@@ -2,21 +2,10 @@ import { Lobby } from './components/Lobby';
 import { HowToPlay } from './components/HowToPlay';
 import { Bubbles } from './components/Bubbles';
 import { LanguageSwitcher } from './components/LanguageSwitcher';
-import { Privacy } from './components/Privacy';
 import { useI18n } from './i18n/I18nContext';
 
 export default function App() {
   const { t } = useI18n();
-
-  // No router: the privacy policy is a separate full page reached by an ordinary
-  // link (with a _redirects rule serving the SPA on a cold hit). Cloudflare Pages
-  // normalizes /privacy → /privacy/ with a trailing slash, so match either form.
-  if (
-    typeof window !== 'undefined' &&
-    window.location.pathname.replace(/\/+$/, '') === '/privacy'
-  ) {
-    return <Privacy />;
-  }
 
   return (
     <div className="relative min-h-dvh bg-sky text-ink flex flex-col">

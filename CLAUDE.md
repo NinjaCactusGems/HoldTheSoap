@@ -41,9 +41,9 @@ Notes for workflows:
 
 ## Privacy policy
 
-The privacy policy lives at `holdthesoap.com/privacy`, rendered by `src/components/Privacy.tsx` (an English-only static page; `public/_redirects` serves the SPA on a cold hit, and `App.tsx` routes `/privacy` to it). It is reachable from the home-page footer link.
+The privacy policy lives at `holdthesoap.com/privacy`. It is a standalone, English-only static page at `public/privacy.html` (served directly by Cloudflare Pages as a real asset — deliberately **not** a React/SPA route, so it resolves with one well-defined request and no rewrite/redirect ambiguity). Its styling mirrors the theme tokens in `src/index.css`. It is reachable from the home-page footer link.
 
-**Keep it in sync:** any change that adds, removes, or alters how personal data is collected, processed, stored, or shared — e.g. new device sensors, analytics, third-party scripts or fonts, cookies, persisted fields, new sub-processors, or sending previously on-device data to the server — **must update `Privacy.tsx` (including its `LAST_UPDATED` date) in the same PR.** If unsure whether a feature is privacy-affecting, assume it is and review the policy.
+**Keep it in sync:** any change that adds, removes, or alters how personal data is collected, processed, stored, or shared — e.g. new device sensors, analytics, third-party scripts or fonts, cookies, persisted fields, new sub-processors, or sending previously on-device data to the server — **must update `public/privacy.html` (including its "Last updated" date) in the same PR.** If unsure whether a feature is privacy-affecting, assume it is and review the policy.
 
 ## Gameplay
 
