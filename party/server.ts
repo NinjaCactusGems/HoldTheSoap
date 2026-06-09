@@ -30,6 +30,19 @@ type Player = {
   team: TeamId | null;
 };
 
+// A testing-mode bot: a virtual lobby participant added from the testing UI
+// (see src/components/Lobby.tsx). Bots are always ready and never away, can be
+// put on a team, and self-eliminate `dropAfterMs` into the hold phase — the
+// delay is parsed from the trailing number in their name (e.g. "Citrus 6" → 6s),
+// so test rounds resolve deterministically.
+type Bot = {
+  id: string;
+  name: string;
+  team: TeamId | null;
+  eliminated: boolean;
+  dropAfterMs: number;
+};
+
 type RoomState = {
   type: 'state';
   phase: Phase;
@@ -64,6 +77,9 @@ type ClientMessage =
   | { type: 'start' }
   | { type: 'eliminate' }
   | { type: 'reaction'; reaction: Reaction }
+  | { type: 'addBot'; name: string; team: TeamId | null }
+  | { type: 'setBotTeam'; id: string; team: TeamId | null }
+  | { type: 'removeBot'; id: string }
   | { type: 'ping'; t: number };
 
 const MAX_PLAYERS_PER_ROOM = 32;
@@ -82,15 +98,16 @@ const TEAM_IDS: readonly TeamId[] = [
   'hottub',
 ];
 // Teams only matter once the room is at least this big; below it, every player
-// is treated as their own side (preserving the free-for-all and solo+Johann
-// behaviour). Captured at game start as `teamsActive`.
+// is treated as their own side (a free-for-all). Captured at game start as
+// `teamsActive`.
 const MIN_PLAYERS_FOR_TEAMS = 3;
 
-// When you start a round alone, Johann joins as a virtual opponent so the solo
-// nerve game isn't an instant win. He never moves, so he's never eliminated and
-// wins the moment the lone human twitches out.
-const BOT_NAME = 'Johann';
-const BOT_ID = 'bot-johann'; // never collides with UUID connection ids
+// Testing-mode bots self-eliminate `seconds * 1000` ms into the hold phase,
+// where `seconds` is the number parsed from the end of their name. Clamp to a
+// sane range, and use this default if a name carries no number.
+const BOT_DROP_MIN_SECONDS = 1;
+const BOT_DROP_MAX_SECONDS = 60;
+const BOT_DROP_DEFAULT_SECONDS = 8;
 
 // Each tempo phase holds 10–15s; changes are announced this far ahead so every
 // client receives them before the synced flip.
@@ -143,9 +160,11 @@ export class Main extends Server {
   private tempo: Tempo = 'normal';
   private tempoEffectiveAt: number | null = null;
   private tempoTimer: ReturnType<typeof setTimeout> | null = null;
-  // Set when a lone player starts a round: Johann joins as a virtual player for
-  // that round only. Cleared back to lobby on reset. See BOT_NAME above.
-  private botActive = false;
+  // Testing-mode bots, keyed by bot id, plus their pending self-eliminate
+  // timers for the in-progress hold phase. Bots persist across rounds (like
+  // team picks) so you can run repeated test rounds without re-adding them.
+  private bots = new Map<string, Bot>();
+  private botTimers = new Map<string, ReturnType<typeof setTimeout>>();
   // Per-connection state, keyed by connection id.
   private playerState = new Map<
     string,
@@ -247,6 +266,48 @@ export class Main extends Server {
         this.broadcast(JSON.stringify(event));
         break;
       }
+      case 'addBot': {
+        // Bots are a lobby-only testing aid. The UI is gated behind a URL
+        // param client-side; the server just keeps the room within capacity.
+        if (this.phase !== 'lobby') return;
+        const name = String(msg.name ?? '').trim().slice(0, MAX_NAME_LENGTH);
+        if (!name) return;
+        const team = msg.team;
+        if (team !== null && team !== undefined && !TEAM_IDS.includes(team)) return;
+        const total = [...this.getConnections()].length + this.bots.size;
+        if (total >= MAX_PLAYERS_PER_ROOM) return;
+        const id = `bot-${crypto.randomUUID()}`;
+        this.bots.set(id, {
+          id,
+          name,
+          team: team ?? null,
+          eliminated: false,
+          dropAfterMs: this.botDropMsFromName(name),
+        });
+        this.broadcastState();
+        break;
+      }
+      case 'setBotTeam': {
+        if (this.phase !== 'lobby') return;
+        const bot = this.bots.get(String(msg.id));
+        if (!bot) return;
+        const team = msg.team;
+        if (team !== null && !TEAM_IDS.includes(team)) return;
+        bot.team = team;
+        this.broadcastState();
+        break;
+      }
+      case 'removeBot': {
+        if (this.phase !== 'lobby') return;
+        const id = String(msg.id);
+        const timer = this.botTimers.get(id);
+        if (timer) {
+          clearTimeout(timer);
+          this.botTimers.delete(id);
+        }
+        if (this.bots.delete(id)) this.broadcastState();
+        break;
+      }
       case 'ping': {
         // Clock sync: echo the client's send time plus our own clock, so the
         // client can estimate round-trip time and its offset from server time
@@ -301,17 +362,37 @@ export class Main extends Server {
         team: entry.team,
       };
     });
-    if (this.botActive) {
+    for (const b of this.bots.values()) {
       players.push({
-        id: BOT_ID,
-        name: BOT_NAME,
-        ready: true,
-        eliminated: false, // Johann never moves → never out → always wins
+        id: b.id,
+        name: b.name,
+        ready: true, // bots are always ready and never away
+        eliminated: b.eliminated,
         away: false,
-        team: null,
+        team: b.team,
       });
     }
     return players;
+  }
+
+  // Parse the trailing number from a bot's name into its hold-phase
+  // self-eliminate delay (in ms), clamped to a sane range. Defaults when the
+  // name carries no number.
+  private botDropMsFromName(name: string): number {
+    const match = /(\d+)\s*$/.exec(name);
+    const seconds = match ? Number(match[1]) : BOT_DROP_DEFAULT_SECONDS;
+    const clamped = Math.min(
+      BOT_DROP_MAX_SECONDS,
+      Math.max(BOT_DROP_MIN_SECONDS, seconds),
+    );
+    return clamped * 1000;
+  }
+
+  // Cancel any pending bot self-eliminate timers (round resolved, reset, or a
+  // bot removed), so none fire into a stale phase.
+  private clearBotTimers() {
+    for (const timer of this.botTimers.values()) clearTimeout(timer);
+    this.botTimers.clear();
   }
 
   // A player's "side" this round. With teams active, teammates collapse to one
@@ -338,22 +419,20 @@ export class Main extends Server {
 
     // Teams only count with enough people; otherwise it's a free-for-all.
     this.teamsActive = active.length >= MIN_PLAYERS_FOR_TEAMS;
-    // Need at least two distinct sides to play — block the degenerate "everyone
-    // on one team" start. A lone player is exempt (Johann fills in below).
+    // Need at least two distinct sides to play — blocks both a lone player and
+    // the degenerate "everyone on one team" start. (Testing-mode bots count as
+    // players, so a human + 1 bot is a valid two-sided start.)
     const factions = new Set(
       active.map((p) => this.factionKey(p, this.teamsActive)),
     );
-    if (active.length > 1 && factions.size < 2) return;
-
-    // Lone starter? Johann joins so they actually have to win it. (botActive is
-    // still false here, so `active` counts only human connections.)
-    this.botActive = active.length === 1;
+    if (factions.size < 2) return;
 
     for (const entry of this.playerState.values()) {
       // Away players start the round already eliminated — they don't get
       // to spectate-then-win by tapping back in halfway through.
       entry.eliminated = !entry.visible;
     }
+    for (const b of this.bots.values()) b.eliminated = false;
     this.winnerId = null;
     this.phase = 'ready';
     this.readyEndsAt = Date.now() + READY_DURATION_MS;
@@ -370,8 +449,21 @@ export class Main extends Server {
     this.tempoEffectiveAt = Date.now();
     this.broadcastState();
     this.tempoTimer = setTimeout(() => this.applyNextTempo(), this.randTempoHold());
-    // A solo room (or one already down to a single player) resolves at once
-    // rather than hanging in the hold phase forever.
+    // Testing-mode bots drop themselves at their name-defined delay.
+    this.clearBotTimers();
+    for (const b of this.bots.values()) {
+      const timer = setTimeout(() => {
+        if (this.phase !== 'holding') return;
+        const bot = this.bots.get(b.id);
+        if (!bot || bot.eliminated) return;
+        bot.eliminated = true;
+        this.broadcastState();
+        this.checkWinCondition();
+      }, b.dropAfterMs);
+      this.botTimers.set(b.id, timer);
+    }
+    // A room already down to a single side resolves at once rather than
+    // hanging in the hold phase forever.
     this.checkWinCondition();
   }
 
@@ -421,6 +513,7 @@ export class Main extends Server {
     if (factions.size > 1) return;
 
     this.stopTempo();
+    this.clearBotTimers();
     this.phase = 'winner';
     // A team wins as a group; a teamless survivor (or any winner when teams are
     // off) wins alone via winnerId.
@@ -445,19 +538,21 @@ export class Main extends Server {
       this.phaseTimer = null;
     }
     this.stopTempo();
+    this.clearBotTimers();
     this.phase = 'lobby';
     this.readyEndsAt = null;
     this.winnerEndsAt = null;
     this.winnerId = null;
     this.winnerTeam = null;
     this.teamsActive = false;
-    this.botActive = false;
     // Everyone returns to the lobby un-readied and back in the game. Team picks
-    // persist across rounds (only the per-round flags reset).
+    // persist across rounds (only the per-round flags reset). Bots persist too,
+    // re-readied for the next round.
     for (const entry of this.playerState.values()) {
       entry.ready = false;
       entry.eliminated = false;
     }
+    for (const b of this.bots.values()) b.eliminated = false;
     this.broadcastState();
   }
 

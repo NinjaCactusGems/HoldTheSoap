@@ -31,6 +31,9 @@ export const en = {
   'room.team': 'Team',
   'room.teamSolo': 'No team (solo)',
   'room.needTeams': 'Need at least two sides',
+  'room.needPlayers': 'Need at least two players',
+  'room.addBot': 'Add bot',
+  'room.removeBot': 'Remove',
   'room.motionWarning':
     "Motion sensing is off, so you can't be eliminated. Open holdthesoap.com on a phone for the full game.",
   'room.startMatch': 'Start match',
@@ -90,6 +93,9 @@ export const de: Record<TranslationKey, string> = {
   'room.team': 'Team',
   'room.teamSolo': 'Kein Team (allein)',
   'room.needTeams': 'Mindestens zwei Seiten nötig',
+  'room.needPlayers': 'Mindestens zwei Spieler nötig',
+  'room.addBot': 'Bot hinzufügen',
+  'room.removeBot': 'Entfernen',
   'room.motionWarning':
     'Die Bewegungserkennung ist aus, du kannst also nicht ausscheiden. Öffne holdthesoap.com auf einem Handy für das volle Spiel.',
   'room.startMatch': 'Spiel starten',

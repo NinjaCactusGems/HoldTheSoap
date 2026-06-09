@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import usePartySocket from 'partysocket/react';
 import { QRCodeSVG } from 'qrcode.react';
 import { generateRoomCode, normalizeRoomCode } from '../lib/roomCode';
-import { generateRandomName } from '../lib/names';
+import { generateRandomName, generateBotName } from '../lib/names';
 import { Game, type Phase, type Reaction } from './Game';
 import { TEAMS, teamById, type TeamId } from '../lib/teams';
 import { useShakeDetector } from '../hooks/useShakeDetector';
@@ -58,6 +58,15 @@ function readRoomFromUrl(): string | null {
   return normalized.length >= 3 ? normalized : null;
 }
 
+// Testing mode (?test=1) reveals lobby controls for adding self-eliminating
+// bots, so win conditions can be exercised without a roomful of phones. The
+// param stays in the URL, so it carries through create/join.
+function readTestingFromUrl(): boolean {
+  if (typeof window === 'undefined') return false;
+  const value = new URLSearchParams(window.location.search).get('test');
+  return value !== null && value !== '' && value !== '0' && value !== 'false';
+}
+
 function getPlayerName(): string {
   if (typeof window === 'undefined') return 'Player';
   let name = window.localStorage.getItem(PLAYER_NAME_KEY);
@@ -74,6 +83,7 @@ export function Lobby() {
     return code ? { phase: 'in-room', code } : { phase: 'idle' };
   }, []);
   const [state, setState] = useState<LobbyState>(initial);
+  const testing = useMemo(() => readTestingFromUrl(), []);
 
   const leave = () => {
     setState({ phase: 'idle' });
@@ -85,7 +95,7 @@ export function Lobby() {
   };
 
   if (state.phase === 'in-room') {
-    return <Room code={state.code} onLeave={leave} />;
+    return <Room code={state.code} onLeave={leave} testing={testing} />;
   }
 
   return <IdleLobby onEnter={(code) => setState({ phase: 'in-room', code })} />;
@@ -144,7 +154,15 @@ function IdleLobby({ onEnter }: { onEnter: (code: string) => void }) {
   );
 }
 
-function Room({ code, onLeave }: { code: string; onLeave: () => void }) {
+function Room({
+  code,
+  onLeave,
+  testing,
+}: {
+  code: string;
+  onLeave: () => void;
+  testing: boolean;
+}) {
   // Per-mount connection id: each tab/Room mount gets its own. Sharing one id
   // across browser tabs (e.g. via localStorage) collides at the partyserver
   // layer — the second WS with the same id evicts the first, so only one
@@ -358,14 +376,15 @@ function Room({ code, onLeave }: { code: string; onLeave: () => void }) {
 
   // Teams unlock at 3+ active players. Below that, everyone is their own side.
   const teamsActive = activePlayers.length >= MIN_PLAYERS_FOR_TEAMS;
-  // Mirror the server gate: need ≥2 distinct sides to start (a lone player is
-  // exempt — Johann fills in). Blocks the "everyone on one team" start.
+  // Mirror the server gate: need ≥2 distinct sides to start. Blocks both a lone
+  // player and the "everyone on one team" start. (Testing-mode bots count as
+  // players/sides here, just like on the server.)
   const factions = new Set(
     activePlayers.map((p) =>
       teamsActive && p.team ? `team:${p.team}` : `solo:${p.id}`,
     ),
   );
-  const canStartTeams = activePlayers.length <= 1 || factions.size >= 2;
+  const enoughSides = factions.size >= 2;
 
   const shareUrl =
     typeof window !== 'undefined'
@@ -467,6 +486,7 @@ function Room({ code, onLeave }: { code: string; onLeave: () => void }) {
           <ul className="flex flex-col gap-1.5">
             {players.map((p) => {
               const isMe = p.id === myId;
+              const isBot = p.id.startsWith('bot-');
               const team = teamById(p.team);
               return (
                 <li
@@ -513,6 +533,48 @@ function Room({ code, onLeave }: { code: string; onLeave: () => void }) {
                         {t('room.save')}
                       </button>
                     </form>
+                  ) : isBot && testing ? (
+                    <>
+                      <span className="min-w-0 flex-1 truncate text-ink">
+                        {p.name}
+                      </span>
+                      {players.length >= MIN_PLAYERS_FOR_TEAMS ? (
+                        <select
+                          value={p.team ?? ''}
+                          onChange={(e) =>
+                            send({
+                              type: 'setBotTeam',
+                              id: p.id,
+                              team: (e.target.value || null) as TeamId | null,
+                            })
+                          }
+                          className="min-w-0 shrink rounded-md border border-line bg-paper px-1.5 py-1 text-xs text-ink focus:outline-none focus:border-go"
+                        >
+                          <option value="">{t('room.teamSolo')}</option>
+                          {TEAMS.map((tm) => (
+                            <option key={tm.id} value={tm.id}>
+                              {tm.label}
+                            </option>
+                          ))}
+                        </select>
+                      ) : (
+                        team && (
+                          <span
+                            className="shrink-0 rounded-full px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-paper"
+                            style={{ backgroundColor: team.color }}
+                          >
+                            {team.label}
+                          </span>
+                        )
+                      )}
+                      <button
+                        type="button"
+                        onClick={() => send({ type: 'removeBot', id: p.id })}
+                        className="shrink-0 rounded-md border border-line px-2 py-1 text-xs font-medium text-ink-muted active:scale-95 transition"
+                      >
+                        {t('room.removeBot')}
+                      </button>
+                    </>
                   ) : (
                     <>
                       <span className="min-w-0 flex-1 truncate text-ink">
@@ -579,6 +641,18 @@ function Room({ code, onLeave }: { code: string; onLeave: () => void }) {
         </label>
       )}
 
+      {testing && (
+        <button
+          type="button"
+          onClick={() =>
+            send({ type: 'addBot', name: generateBotName(), team: null })
+          }
+          className="w-full rounded-full border border-dashed border-line bg-paper px-6 py-2.5 text-sm font-semibold text-ink-muted active:scale-95 transition"
+        >
+          {t('room.addBot')}
+        </button>
+      )}
+
       <button
         type="button"
         onClick={() => onToggleReady(!(me?.ready ?? false))}
@@ -596,15 +670,17 @@ function Room({ code, onLeave }: { code: string; onLeave: () => void }) {
 
       <button
         type="button"
-        disabled={!allReady || !canStartTeams}
+        disabled={!allReady || !enoughSides}
         onClick={() => send({ type: 'start' })}
         className="w-full rounded-full bg-go px-6 py-3 text-base font-semibold text-paper shadow-lg shadow-go/20 active:scale-95 transition disabled:bg-line disabled:text-ink-faint disabled:shadow-none"
       >
         {t(
           !allReady
             ? 'room.waitingEveryone'
-            : !canStartTeams
-              ? 'room.needTeams'
+            : !enoughSides
+              ? activePlayers.length <= 1
+                ? 'room.needPlayers'
+                : 'room.needTeams'
               : 'room.startMatch',
         )}
       </button>
