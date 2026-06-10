@@ -65,18 +65,30 @@
     animation: sheet-up 0.8s cubic-bezier(0.16, 1, 0.3, 1) both;
   }
 
-  /* Post-game: the winner banner lingers a beat as the lobby slides up, then
-     fades out so attention shifts to starting the next match. */
+  /* Post-game: the winner banner lingers a beat as the lobby slides up, fades
+     out, then collapses its row (1fr → 0fr) so the smileys and coffee pill
+     glide up into the freed space instead of leaving a dead gap. */
   @keyframes winner-fade {
     0%,
     40% {
       opacity: 1;
+      grid-template-rows: 1fr;
+    }
+    70% {
+      opacity: 0;
+      grid-template-rows: 1fr;
     }
     100% {
       opacity: 0;
+      grid-template-rows: 0fr;
     }
   }
   .animate-winner-fade {
-    animation: winner-fade 1.6s ease-out forwards;
+    display: grid;
+    animation: winner-fade 2s ease-out forwards;
+  }
+  .animate-winner-fade > * {
+    min-height: 0;
+    overflow: hidden;
   }
 }

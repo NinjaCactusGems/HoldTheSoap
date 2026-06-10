@@ -5,7 +5,7 @@ import { generateRoomCode, normalizeRoomCode } from '../lib/roomCode';
 import { generateRandomName, generateBotName } from '../lib/names';
 import { Game, type Phase, type Reaction } from './Game';
 import { TEAMS, teamById, type TeamId } from '../lib/teams';
-import { useShakeDetector } from '../hooks/useShakeDetector';
+import { motionNeedsGesture, useShakeDetector } from '../hooks/useShakeDetector';
 import { useMatchMusic } from '../hooks/useMatchMusic';
 import { useServerClock } from '../hooks/useServerClock';
 import { useSyncedTempo } from '../hooks/useSyncedTempo';
@@ -43,6 +43,7 @@ type Player = {
   ready: boolean;
   eliminated: boolean;
   away: boolean;
+  noMotion: boolean;
   team: TeamId | null;
 };
 
@@ -200,6 +201,14 @@ function Room({
   // (iOS requires the permission request to come from a user gesture). The
   // Game overlay reads lastShakeAt from this to detect "moved too fast".
   const detector = useShakeDetector(HOLD_THRESHOLD);
+  const { start: startDetector } = detector;
+
+  // Where no permission gesture is needed (Android, desktop), probe for the
+  // sensor right away so sensor-less devices learn they'll spectate before
+  // they even try to ready up. iOS keeps waiting for the ready tap.
+  useEffect(() => {
+    if (!motionNeedsGesture()) void startDetector();
+  }, [startDetector]);
 
   // Keep the screen awake for the whole time in a room: a phone slipping into
   // standby hides the page, which the server treats as "away".
@@ -283,6 +292,29 @@ function Room({
     document.addEventListener('visibilitychange', onChange);
     return () => document.removeEventListener('visibilitychange', onChange);
   }, [status, socket]);
+
+  // Sensor verdict. Denied permission counts as unsupported too — a player who
+  // can't be eliminated would win every round by standing still. Unresolved
+  // ('unknown' probe, idle permission) reports nothing: the server defaults to
+  // supported, and we never hold a phone hostage on a pending probe.
+  const motionUnsupported =
+    detector.permissionState === 'denied' ||
+    detector.permissionState === 'unavailable' ||
+    detector.sensorStatus === 'absent';
+  const motionResolved =
+    detector.sensorStatus === 'present' || motionUnsupported;
+
+  // Report the verdict once resolved. Keyed on `status` so a reconnect (which
+  // resets the server's default-true state) re-sends it; a probe that flips
+  // later (absent → present after a late first reading) re-sends as well.
+  useEffect(() => {
+    if (status !== 'open' || !motionResolved) return;
+    if (socket.readyState === WebSocket.OPEN) {
+      socket.send(
+        JSON.stringify({ type: 'motionSupport', supported: !motionUnsupported }),
+      );
+    }
+  }, [status, socket, motionResolved, motionUnsupported]);
 
   // Server clock sync: converts server timestamps to local time so every device
   // in the room acts in lockstep (and a foundation for future server-driven
@@ -371,7 +403,8 @@ function Room({
   };
 
   // Backgrounded tabs are skipped — they neither block start nor count.
-  const activePlayers = players.filter((p) => !p.away);
+  // Sensor-less spectators likewise, mirroring the server's start gate.
+  const activePlayers = players.filter((p) => !p.away && !p.noMotion);
   const allReady = activePlayers.length > 0 && activePlayers.every((p) => p.ready);
 
   // Teams unlock at 3+ active players. Below that, everyone is their own side.
@@ -588,6 +621,11 @@ function Room({
                           {team.label}
                         </span>
                       )}
+                      {p.noMotion && (
+                        <span className="shrink-0 rounded-full bg-line px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-ink-muted">
+                          {t('room.spectator')}
+                        </span>
+                      )}
                       {p.away && (
                         <span className="shrink-0 rounded-full bg-line px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-ink-muted">
                           {t('room.away')}
@@ -655,16 +693,16 @@ function Room({
 
       <button
         type="button"
+        disabled={motionUnsupported || me?.noMotion}
         onClick={() => onToggleReady(!(me?.ready ?? false))}
-        className={`w-full rounded-full px-6 py-4 text-lg font-semibold text-paper shadow-lg active:scale-95 transition ${
+        className={`w-full rounded-full px-6 py-4 text-lg font-semibold text-paper shadow-lg active:scale-95 transition disabled:bg-line disabled:text-ink-faint disabled:shadow-none ${
           me?.ready ? 'bg-go shadow-go/25' : 'bg-eliminated shadow-eliminated/25'
         }`}
       >
         {t(me?.ready ? 'room.readyDone' : 'room.readyPrompt')}
       </button>
 
-      {(detector.permissionState === 'denied' ||
-        detector.permissionState === 'unavailable') && (
+      {motionUnsupported && (
         <p className="-mt-2 text-xs text-accent">{t('room.motionWarning')}</p>
       )}
 

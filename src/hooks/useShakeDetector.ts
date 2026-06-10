@@ -3,14 +3,33 @@ import { haptics } from '../lib/haptics';
 
 type PermissionState = 'idle' | 'granted' | 'denied' | 'unavailable';
 
+// Whether the device has actually produced motion data. Permission alone isn't
+// enough: desktop Chrome defines DeviceMotionEvent (and "grants" without a
+// prompt) but never delivers a reading, so presence is only known once a real
+// event arrives — or ruled out when none does within the probe window.
+export type SensorStatus = 'unknown' | 'present' | 'absent';
+
 interface DeviceMotionEventWithPermission {
   requestPermission?: () => Promise<'granted' | 'denied'>;
+}
+
+/** True where the motion permission must be requested from a user gesture (iOS). */
+export function motionNeedsGesture(): boolean {
+  return (
+    typeof DeviceMotionEvent !== 'undefined' &&
+    typeof (DeviceMotionEvent as unknown as DeviceMotionEventWithPermission)
+      .requestPermission === 'function'
+  );
 }
 
 const SMOOTHING_ALPHA = 0.3;
 const TILT_SMOOTHING_ALPHA = 0.2;
 const DEBOUNCE_MS = 500;
 const GRAVITY = 9.81;
+// How long after the listener attaches we wait for a first real reading before
+// declaring the device sensor-less. Phones deliver their first event within
+// milliseconds; desktops never do.
+const SENSOR_PROBE_MS = 3000;
 
 /** Tilt (degrees from flat/screen-up) past which the soap slides off / drops. */
 export const TILT_THRESHOLD_DEG = 30;
@@ -29,6 +48,7 @@ function screenAngle(): number {
 export function useShakeDetector(initialThreshold = 15) {
   const [started, setStarted] = useState(false);
   const [permissionState, setPermissionState] = useState<PermissionState>('idle');
+  const [sensorStatus, setSensorStatus] = useState<SensorStatus>('unknown');
   const [magnitude, setMagnitude] = useState(0);
   const [threshold, setThreshold] = useState(initialThreshold);
   const [shakeCount, setShakeCount] = useState(0);
@@ -51,12 +71,31 @@ export function useShakeDetector(initialThreshold = 15) {
   const wasAboveRef = useRef(false);
   const rafRef = useRef<number | null>(null);
   const listenerRef = useRef<((e: DeviceMotionEvent) => void) | null>(null);
+  // Whether any event with real (non-null) data has arrived. A ref, so the
+  // 60-100Hz handler only touches React state on the one transition to present.
+  const sensorSeenRef = useRef(false);
+  const probeTimerRef = useRef<number | null>(null);
 
   useEffect(() => {
     thresholdRef.current = threshold;
   }, [threshold]);
 
   const handleMotion = useCallback((e: DeviceMotionEvent) => {
+    // Sensor presence: only an event carrying at least one non-null reading
+    // counts — desktops can fire ghost events whose fields are all null. Late
+    // arrivals flip an earlier 'absent' verdict back to 'present'.
+    if (!sensorSeenRef.current) {
+      const acc = e.acceleration;
+      const grav = e.accelerationIncludingGravity;
+      const hasData =
+        (acc != null && (acc.x !== null || acc.y !== null || acc.z !== null)) ||
+        (grav != null && (grav.x !== null || grav.y !== null || grav.z !== null));
+      if (hasData) {
+        sensorSeenRef.current = true;
+        setSensorStatus('present');
+      }
+    }
+
     // Prefer gravity-removed linear acceleration. Some browsers (older
     // Android, some iOS configurations) only populate the gravity-
     // included variant; subtract a fixed gravity baseline from the
@@ -166,6 +205,18 @@ export function useShakeDetector(initialThreshold = 15) {
     listenerRef.current = handleMotion;
     window.addEventListener('devicemotion', handleMotion);
     setStarted(true);
+
+    // Probe for a first real reading. Hidden tabs don't receive sensor
+    // events, so re-arm instead of judging while backgrounded.
+    const probe = () => {
+      if (sensorSeenRef.current) return;
+      if (document.hidden) {
+        probeTimerRef.current = window.setTimeout(probe, SENSOR_PROBE_MS);
+        return;
+      }
+      setSensorStatus('absent');
+    };
+    probeTimerRef.current = window.setTimeout(probe, SENSOR_PROBE_MS);
   }, [started, handleMotion]);
 
   // Pump the smoothed ref into React state at ~60Hz max.
@@ -191,6 +242,10 @@ export function useShakeDetector(initialThreshold = 15) {
         window.removeEventListener('devicemotion', listenerRef.current);
         listenerRef.current = null;
       }
+      if (probeTimerRef.current !== null) {
+        window.clearTimeout(probeTimerRef.current);
+        probeTimerRef.current = null;
+      }
     };
   }, []);
 
@@ -198,6 +253,7 @@ export function useShakeDetector(initialThreshold = 15) {
     start,
     started,
     permissionState,
+    sensorStatus,
     magnitude,
     threshold,
     setThreshold,
