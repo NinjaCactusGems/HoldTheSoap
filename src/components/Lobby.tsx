@@ -24,6 +24,13 @@ const HOLD_THRESHOLD = 7;
 // hibernated room server — never replace this with a JSON message.
 const KEEPALIVE_INTERVAL_MS = 25_000;
 
+// "Still playing" heartbeat cadence during the hold phase. A perfectly steady
+// phone sends nothing else, so without this the server's abandoned-round
+// watchdog couldn't tell a careful room from a dead one. Must be comfortably
+// inside the server's HOLD_ABANDON_MS (2 min) even with background-tab timer
+// throttling (~1/min).
+const ALIVE_INTERVAL_MS = 60_000;
+
 // Applause timing on the losing phones: a beat of silence after the winner is
 // revealed before it starts, then a slow fade-out timed to finish as the lobby
 // comes in (i.e. ending at winnerEndsAt), so it dies down rather than cuts.
@@ -326,6 +333,21 @@ function Room({
   }, [status, socket]);
 
   const me = players.find((p) => p.id === myId);
+
+  // "Still playing" heartbeat: while a round is held and we're still in it,
+  // tell the server live players remain, so its watchdog only ends rounds
+  // that everyone has actually abandoned. Eliminated players and spectators
+  // stay quiet — their liveness doesn't keep a round open.
+  const holdingAndAlive = phase === 'holding' && me?.eliminated === false;
+  useEffect(() => {
+    if (status !== 'open' || !holdingAndAlive) return;
+    const id = window.setInterval(() => {
+      if (socket.readyState === WebSocket.OPEN) {
+        socket.send(JSON.stringify({ type: 'alive' }));
+      }
+    }, ALIVE_INTERVAL_MS);
+    return () => window.clearInterval(id);
+  }, [status, socket, holdingAndAlive]);
 
   // When a winner is crowned, the losers' phones applaud — each phone loops the
   // applause clip at a slightly randomized pitch/speed, so a roomful of phones

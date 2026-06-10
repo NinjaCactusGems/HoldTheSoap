@@ -75,11 +75,15 @@ type Bot = {
 type RoomData = {
   phase: Phase;
   readyEndsAt: number | null;
-  // Watchdog: hard end of the hold phase. A round whose remaining players all
-  // vanish without a clean close would otherwise hang forever now that the
-  // server hibernates between messages; when this alarm fires the round
-  // resolves to "no one" and the room returns to the lobby.
+  // Watchdog backstop: the absolute latest the hold phase may run, regardless
+  // of heartbeats. The usual exit for a dead round is the abandonment check
+  // (lastActivityAt + HOLD_ABANDON_MS): live players heartbeat every minute,
+  // so a round whose remaining players all vanished without a clean close
+  // goes silent and resolves to "no one" instead of hanging forever.
   holdEndsAt: number | null;
+  // Server time of the last sign of life during the hold phase: set at "GO"
+  // and refreshed by each 'alive' heartbeat. Null outside the hold phase.
+  lastActivityAt: number | null;
   winnerEndsAt: number | null;
   winnerId: string | null;
   winnerTeam: TeamId | null;
@@ -95,6 +99,7 @@ function defaultRoom(): RoomData {
     phase: 'lobby',
     readyEndsAt: null,
     holdEndsAt: null,
+    lastActivityAt: null,
     winnerEndsAt: null,
     winnerId: null,
     winnerTeam: null,
@@ -131,6 +136,7 @@ type ClientMessage =
   | { type: 'visibility'; visible: boolean }
   | { type: 'motionSupport'; supported: boolean }
   | { type: 'start' }
+  | { type: 'alive' }
   | { type: 'eliminate' }
   | { type: 'reaction'; reaction: Reaction }
   | { type: 'addBot'; name: string; team: TeamId | null }
@@ -142,8 +148,14 @@ const MAX_PLAYERS_PER_ROOM = 32;
 const MAX_NAME_LENGTH = 24;
 const READY_DURATION_MS = 5000;
 const WINNER_DURATION_MS = 10000;
-// Watchdog cap on the hold phase (see RoomData.holdEndsAt).
-const MAX_HOLD_DURATION_MS = 10 * 60_000;
+// Hold-phase watchdog (see RoomData.holdEndsAt / lastActivityAt): the round
+// resolves to "no one" once every player has been silent this long — live
+// players heartbeat every ~60s (ALIVE_INTERVAL_MS client-side), so two missed
+// beats from everyone means nobody is left to finish the round...
+const HOLD_ABANDON_MS = 2 * 60_000;
+// ...and this is the absolute cap, heartbeats or not, so a pathological
+// client can't pin a room open forever.
+const MAX_HOLD_DURATION_MS = 60 * 60_000;
 const REACTIONS: readonly Reaction[] = ['turd', 'heart', 'dancer', 'dancerF'];
 const TEAM_IDS: readonly TeamId[] = [
   'shower',
@@ -321,6 +333,17 @@ export class Main extends Server {
         this.tryStartGame();
         break;
       }
+      case 'alive': {
+        // "Still playing" heartbeat from a player who's still in: refresh the
+        // abandonment clock (and the alarm armed on it) so the watchdog only
+        // ends rounds nobody is left to finish — a marathon of perfectly
+        // steady phones sends nothing else, and would otherwise look dead.
+        if (this.room.phase !== 'holding') return;
+        this.room.lastActivityAt = Date.now();
+        this.saveRoom();
+        this.armAlarm();
+        break;
+      }
       case 'eliminate': {
         if (this.room.phase !== 'holding') return;
         if (this.playerOf(connection).eliminated) return; // idempotent — clients may send twice
@@ -432,6 +455,9 @@ export class Main extends Server {
         return this.room.winnerEndsAt;
       case 'holding': {
         let due = this.room.holdEndsAt ?? Number.POSITIVE_INFINITY;
+        if (this.room.lastActivityAt !== null) {
+          due = Math.min(due, this.room.lastActivityAt + HOLD_ABANDON_MS);
+        }
         for (const b of Object.values(this.room.bots)) {
           if (!b.eliminated && b.dropAt !== null) due = Math.min(due, b.dropAt);
         }
@@ -471,9 +497,15 @@ export class Main extends Server {
       }
       this.checkWinCondition();
       if (this.room.phase === 'holding') {
-        if (r.holdEndsAt !== null && now >= r.holdEndsAt) {
-          // Watchdog: a round nobody can finish (every remaining player gone
-          // without a clean close) ends with no winner instead of hanging.
+        const abandonedAt =
+          r.lastActivityAt === null ? null : r.lastActivityAt + HOLD_ABANDON_MS;
+        if (
+          (r.holdEndsAt !== null && now >= r.holdEndsAt) ||
+          (abandonedAt !== null && now >= abandonedAt)
+        ) {
+          // Watchdog: every player has gone silent past the abandonment
+          // window (or the absolute cap is up) — nobody is left to finish
+          // the round, so it ends with no winner instead of hanging.
           this.resolveRound(null);
         } else {
           this.armAlarm();
@@ -578,6 +610,7 @@ export class Main extends Server {
     this.room.phase = 'holding';
     this.room.readyEndsAt = null;
     this.room.holdEndsAt = now + MAX_HOLD_DURATION_MS;
+    this.room.lastActivityAt = now;
     // Testing-mode bots drop themselves at their name-defined delay.
     for (const b of Object.values(this.room.bots)) {
       b.dropAt = now + b.dropAfterMs;
@@ -617,6 +650,7 @@ export class Main extends Server {
     }
     this.room.readyEndsAt = null;
     this.room.holdEndsAt = null;
+    this.room.lastActivityAt = null;
     for (const b of Object.values(this.room.bots)) b.dropAt = null;
     this.room.winnerEndsAt = Date.now() + WINNER_DURATION_MS;
     this.saveRoom();
@@ -628,6 +662,7 @@ export class Main extends Server {
     this.room.phase = 'lobby';
     this.room.readyEndsAt = null;
     this.room.holdEndsAt = null;
+    this.room.lastActivityAt = null;
     this.room.winnerEndsAt = null;
     this.room.winnerId = null;
     this.room.winnerTeam = null;
