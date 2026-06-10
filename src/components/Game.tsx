@@ -27,8 +27,10 @@ const REACTION_EMOJI: Record<Reaction, string> = {
 
 const COFFEE_URL = 'https://buymeacoffee.com/ninjacactus';
 
-// A quiet tip-jar pill, shown to eliminated players during the hold phase and
-// to everyone (winner included) on the winner screen, until the lobby reappears.
+// A tip-jar pill, shown to eliminated players during the hold phase and to
+// everyone (winner included) on the winner screen, and it stays up when the
+// post-game lobby slides in. Coffee cup in a circle on the left, external-link
+// arrow on the right, so it reads as a tappable link at a glance.
 function CoffeeLink() {
   const { t } = useI18n();
   return (
@@ -36,9 +38,42 @@ function CoffeeLink() {
       href={COFFEE_URL}
       target="_blank"
       rel="noopener noreferrer"
-      className="relative z-10 mt-4 rounded-full border border-line bg-paper/70 px-4 py-2 text-xs font-semibold text-ink-muted active:scale-95 transition"
+      className="relative z-10 mt-4 flex max-w-[92vw] items-center gap-3 rounded-full border border-line bg-paper/70 py-2 pl-2 pr-5 text-xs font-semibold text-ink-muted active:scale-95 transition"
     >
-      {t('support.coffee')}
+      <span className="grid h-11 w-11 shrink-0 place-items-center rounded-full bg-ochre/15 text-ochre">
+        <svg
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth={2}
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          className="h-5 w-5"
+          aria-hidden
+        >
+          {/* cup with handle and rising steam */}
+          <path d="M17 9h1a3.5 3.5 0 1 1 0 7h-1" />
+          <path d="M4 9h13v7a4 4 0 0 1-4 4H8a4 4 0 0 1-4-4Z" />
+          <path d="M8 2.5q-1 1.5 0 3" />
+          <path d="M12.5 2.5q-1 1.5 0 3" />
+        </svg>
+      </span>
+      <span className="text-left leading-snug">{t('support.coffee')}</span>
+      <svg
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth={2}
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        className="h-4 w-4 shrink-0 opacity-60"
+        aria-hidden
+      >
+        {/* external-link arrow */}
+        <path d="M15 3h6v6" />
+        <path d="M10 14 21 3" />
+        <path d="M21 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h6" />
+      </svg>
     </a>
   );
 }
@@ -351,6 +386,7 @@ function WinnerView({
               room can focus on getting the next match going (smileys stay). */}
           <div className="animate-winner-fade">{header}</div>
           {smileys}
+          <CoffeeLink />
         </div>
         <div className="relative z-10 flex min-h-0 flex-1 items-end justify-center px-4 pb-4">
           <div className="animate-sheet-up max-h-full w-full max-w-sm overflow-y-auto">

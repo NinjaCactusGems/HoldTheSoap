@@ -73,7 +73,7 @@ Notes:
 - A match needs **at least two distinct sides** to start (`tryStartGame` in `party/server.ts`); a lone player (or a room where everyone is on one team) cannot start. There is no auto-added solo opponent.
 - A player who joins mid-round is marked eliminated (spectates) until the next reset.
 - Devices without a usable motion sensor are **spectators** (e.g. desktops; denied motion permission counts too). Detection is an event probe in `useShakeDetector` — desktop Chrome defines `DeviceMotionEvent` but never fires usable events, so "no real reading within ~3s" is the signal. The client reports a `motionSupport` yes/no to the server (noted in the privacy policy); spectators can't ready up, never count as a side or block start, and begin every round eliminated. The server defaults to supported, so clients that never report behave as before.
-- A "Buy me a coffee" pill (`CoffeeLink` in `Game.tsx`) shows for eliminated players from elimination onward, and for **everyone — winner included — on the winner screen**. It disappears when the post-game lobby slides in.
+- A "Buy me a coffee" pill (`CoffeeLink` in `Game.tsx`) shows for eliminated players from elimination onward, and for **everyone — winner included — on the winner screen and through the post-game lobby**. It's a tall pill with a coffee-cup icon in a circle on the left and an external-link arrow on the right.
 - Vibration patterns live in `src/lib/haptics.ts`.
 
 ### Testing mode
