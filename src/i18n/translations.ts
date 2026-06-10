@@ -62,7 +62,7 @@ export const en = {
   'game.noOne': 'No one',
   'game.backToLobby': 'Back to lobby in {seconds}…',
 
-  'support.coffee': 'Enjoying it? Buy me a coffee 🙂',
+  'support.coffee': 'Do you enjoy the game? Consider buying me a coffee :)',
 
   'footer.privacy': 'Privacy',
 } as const;
@@ -129,7 +129,7 @@ export const de: Record<TranslationKey, string> = {
   'game.noOne': 'Niemand',
   'game.backToLobby': 'Zurück zur Lobby in {seconds}…',
 
-  'support.coffee': 'Gefällt dir das Spiel? Spendier mir einen Kaffee 🙂',
+  'support.coffee': 'Gefällt dir das Spiel? Spendier mir doch einen Kaffee :)',
 
   'footer.privacy': 'Datenschutz',
 };

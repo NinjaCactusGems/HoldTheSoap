@@ -27,8 +27,8 @@ const REACTION_EMOJI: Record<Reaction, string> = {
 
 const COFFEE_URL = 'https://buymeacoffee.com/ninjacactus';
 
-// A quiet tip-jar pill, shown only to players who are out of the running —
-// from elimination until the lobby reappears. Never on the winner's screen.
+// A quiet tip-jar pill, shown to eliminated players during the hold phase and
+// to everyone (winner included) on the winner screen, until the lobby reappears.
 function CoffeeLink() {
   const { t } = useI18n();
   return (
@@ -371,7 +371,7 @@ function WinnerView({
           {t('game.backToLobby', { seconds: secondsLeft })}
         </div>
       )}
-      {!iWon && <CoffeeLink />}
+      <CoffeeLink />
     </div>
   );
 }
