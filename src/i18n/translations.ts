@@ -35,7 +35,8 @@ export const en = {
   'room.addBot': 'Add bot',
   'room.removeBot': 'Remove',
   'room.motionWarning':
-    "Motion sensing is off, so you can't be eliminated. Open holdthesoap.com on a phone for the full game.",
+    "No motion sensors here, so you'll watch this one as a spectator. Open holdthesoap.com on a phone to play.",
+  'room.spectator': 'Spectator',
   'room.startMatch': 'Start match',
   'room.waitingEveryone': 'Waiting for everyone…',
   'room.leave': 'Leave',
@@ -54,11 +55,14 @@ export const en = {
   'game.droppedSoap': 'You dropped the soap',
   'game.out': 'OUT',
   'game.stillIn': '{count} still in',
+  'game.spectating': "You're spectating — this device has no motion sensors",
   'game.youWin': 'You win!',
   'game.winner': 'Winner',
   'game.teamWins': '{team} win!',
   'game.noOne': 'No one',
   'game.backToLobby': 'Back to lobby in {seconds}…',
+
+  'support.coffee': 'Enjoying it? Buy me a coffee 🙂',
 
   'footer.privacy': 'Privacy',
 } as const;
@@ -97,7 +101,8 @@ export const de: Record<TranslationKey, string> = {
   'room.addBot': 'Bot hinzufügen',
   'room.removeBot': 'Entfernen',
   'room.motionWarning':
-    'Die Bewegungserkennung ist aus, du kannst also nicht ausscheiden. Öffne holdthesoap.com auf einem Handy für das volle Spiel.',
+    'Keine Bewegungssensoren gefunden, du schaust also als Zuschauer zu. Öffne holdthesoap.com auf einem Handy, um mitzuspielen.',
+  'room.spectator': 'Zuschauer',
   'room.startMatch': 'Spiel starten',
   'room.waitingEveryone': 'Warte auf alle…',
   'room.leave': 'Verlassen',
@@ -116,11 +121,15 @@ export const de: Record<TranslationKey, string> = {
   'game.droppedSoap': 'Du hast die Seife fallen lassen',
   'game.out': 'RAUS',
   'game.stillIn': 'noch {count} dabei',
+  'game.spectating':
+    'Du schaust zu — dieses Gerät hat keine Bewegungssensoren',
   'game.youWin': 'Du gewinnst!',
   'game.winner': 'Sieger',
   'game.teamWins': '{team} gewinnt!',
   'game.noOne': 'Niemand',
   'game.backToLobby': 'Zurück zur Lobby in {seconds}…',
+
+  'support.coffee': 'Gefällt dir das Spiel? Spendier mir einen Kaffee 🙂',
 
   'footer.privacy': 'Datenschutz',
 };

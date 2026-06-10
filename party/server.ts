@@ -27,6 +27,9 @@ type Player = {
   ready: boolean;
   eliminated: boolean;
   away: boolean;
+  // Device reported no usable motion sensor (or denied access) — a spectator:
+  // never eligible for a match, doesn't count as a side, can't win.
+  noMotion: boolean;
   team: TeamId | null;
 };
 
@@ -74,6 +77,7 @@ type ClientMessage =
   | { type: 'setTeam'; team: TeamId | null }
   | { type: 'toggleReady'; ready: boolean }
   | { type: 'visibility'; visible: boolean }
+  | { type: 'motionSupport'; supported: boolean }
   | { type: 'start' }
   | { type: 'eliminate' }
   | { type: 'reaction'; reaction: Reaction }
@@ -173,6 +177,10 @@ export class Main extends Server {
       ready: boolean;
       eliminated: boolean;
       visible: boolean;
+      // Defaults true: clients only report after their sensor probe resolves,
+      // and a device we know nothing about (e.g. an older cached client that
+      // never sends motionSupport) keeps today's behavior.
+      motionSupported: boolean;
       team: TeamId | null;
     }
   >();
@@ -224,8 +232,26 @@ export class Main extends Server {
       case 'toggleReady': {
         if (this.phase !== 'lobby') return;
         const entry = this.ensurePlayer(connection.id);
+        // Sensor-less devices spectate — they can't ready up for a match.
+        if (msg.ready && !entry.motionSupported) return;
         entry.ready = Boolean(msg.ready);
         this.broadcastState();
+        break;
+      }
+      case 'motionSupport': {
+        // The client's sensor probe resolved (any phase — it can take a few
+        // seconds after joining). Sensor-less devices also lose ready, so a
+        // desktop that readied inside the probe window can't slip into a match
+        // — and one that did anyway is eliminated on the spot rather than
+        // left to "win" by never moving.
+        const entry = this.ensurePlayer(connection.id);
+        entry.motionSupported = Boolean(msg.supported);
+        if (!entry.motionSupported) {
+          entry.ready = false;
+          if (this.phase !== 'lobby') entry.eliminated = true;
+        }
+        this.broadcastState();
+        if (this.phase === 'holding') this.checkWinCondition();
         break;
       }
       case 'visibility': {
@@ -334,6 +360,7 @@ export class Main extends Server {
     ready: boolean;
     eliminated: boolean;
     visible: boolean;
+    motionSupported: boolean;
     team: TeamId | null;
   } {
     let entry = this.playerState.get(id);
@@ -343,6 +370,7 @@ export class Main extends Server {
         ready: false,
         eliminated: false,
         visible: true,
+        motionSupported: true,
         team: null,
       };
       this.playerState.set(id, entry);
@@ -359,6 +387,7 @@ export class Main extends Server {
         ready: entry.ready,
         eliminated: entry.eliminated,
         away: !entry.visible,
+        noMotion: !entry.motionSupported,
         team: entry.team,
       };
     });
@@ -369,6 +398,7 @@ export class Main extends Server {
         ready: true, // bots are always ready and never away
         eliminated: b.eliminated,
         away: false,
+        noMotion: false,
         team: b.team,
       });
     }
@@ -413,8 +443,10 @@ export class Main extends Server {
     if (this.phase !== 'lobby') return;
     // Skip away players entirely — they neither block start nor count
     // toward the "all ready" check. They stay in the room and rejoin
-    // the next lobby cycle when they come back.
-    const active = this.currentPlayers().filter((p) => !p.away);
+    // the next lobby cycle when they come back. Sensor-less devices are
+    // skipped the same way: they spectate and never make up a side, so a
+    // phone plus only desktops can't start a match.
+    const active = this.currentPlayers().filter((p) => !p.away && !p.noMotion);
     if (active.length === 0 || !active.every((p) => p.ready)) return;
 
     // Teams only count with enough people; otherwise it's a free-for-all.
@@ -428,9 +460,9 @@ export class Main extends Server {
     if (factions.size < 2) return;
 
     for (const entry of this.playerState.values()) {
-      // Away players start the round already eliminated — they don't get
-      // to spectate-then-win by tapping back in halfway through.
-      entry.eliminated = !entry.visible;
+      // Away and sensor-less players start the round already eliminated —
+      // neither gets to spectate-then-win halfway through.
+      entry.eliminated = !entry.visible || !entry.motionSupported;
     }
     for (const b of this.bots.values()) b.eliminated = false;
     this.winnerId = null;

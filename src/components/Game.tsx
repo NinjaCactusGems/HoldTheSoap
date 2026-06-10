@@ -14,6 +14,7 @@ export type Player = {
   ready: boolean;
   eliminated: boolean;
   away: boolean;
+  noMotion: boolean;
   team: TeamId | null;
 };
 
@@ -23,6 +24,24 @@ const REACTION_EMOJI: Record<Reaction, string> = {
   dancer: '🕺',
   dancerF: '💃',
 };
+
+const COFFEE_URL = 'https://buymeacoffee.com/ninjacactus';
+
+// A quiet tip-jar pill, shown only to players who are out of the running —
+// from elimination until the lobby reappears. Never on the winner's screen.
+function CoffeeLink() {
+  const { t } = useI18n();
+  return (
+    <a
+      href={COFFEE_URL}
+      target="_blank"
+      rel="noopener noreferrer"
+      className="relative z-10 mt-4 rounded-full border border-line bg-paper/70 px-4 py-2 text-xs font-semibold text-ink-muted active:scale-95 transition"
+    >
+      {t('support.coffee')}
+    </a>
+  );
+}
 
 type GameProps = {
   phase: Exclude<Phase, 'lobby'>;
@@ -220,14 +239,15 @@ function HoldingView({
       {iAmOut ? (
         <div className="relative z-10 flex flex-col items-center gap-4 px-6 text-center">
           <div className="text-7xl" aria-hidden="true">
-            😟
+            {me?.noMotion ? '👀' : '😟'}
           </div>
           <div className="font-round text-3xl sm:text-4xl font-bold tracking-tight">
-            {t('game.droppedSoap')}
+            {t(me?.noMotion ? 'game.spectating' : 'game.droppedSoap')}
           </div>
           <div className="text-sm uppercase tracking-[0.3em] text-ink-muted">
             {t('game.stillIn', { count: aliveCount })}
           </div>
+          <CoffeeLink />
         </div>
       ) : (
         <>
@@ -351,6 +371,7 @@ function WinnerView({
           {t('game.backToLobby', { seconds: secondsLeft })}
         </div>
       )}
+      {!iWon && <CoffeeLink />}
     </div>
   );
 }
