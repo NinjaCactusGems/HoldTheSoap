@@ -223,10 +223,13 @@
         <section>
           <h2>How long we keep it</h2>
           <p>
-            Display names and room information are temporary: they exist only
-            while a game room is active and are discarded when the room ends or
-            everyone leaves. We do not keep a history of games or names. Your
-            language preference stays on your own device until you remove it.
+            Display names and room information are temporary: they are held by
+            the game server while a room is active (when a room is briefly idle,
+            its state is kept in that room&#8217;s own server-side storage at our
+            hosting provider, Cloudflare) and everything is deleted automatically
+            as soon as everyone leaves the room. We do not keep a history of
+            games or names. Your language preference stays on your own device
+            until you remove it.
           </p>
         </section>
 
