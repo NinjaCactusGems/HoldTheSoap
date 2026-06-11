@@ -49,7 +49,7 @@ export const en = {
   'team.toilet': 'Toilet',
   'team.basin': 'Basin',
   'team.bidet': 'Bidet',
-  'team.kitchen': 'Kitchen Sink',
+  'team.kitchen': 'Kitchen',
   'team.hottub': 'Hot Tub',
 
   'status.connected': 'Connected',
@@ -126,7 +126,7 @@ export const de: Record<TranslationKey, string> = {
   'team.toilet': 'Toilette',
   'team.basin': 'Becken',
   'team.bidet': 'Bidet',
-  'team.kitchen': 'Spüle',
+  'team.kitchen': 'Küche',
   'team.hottub': 'Whirlpool',
 
   'status.connected': 'Verbunden',
@@ -203,7 +203,7 @@ export const es: Record<TranslationKey, string> = {
   'team.toilet': 'Inodoro',
   'team.basin': 'Lavamanos',
   'team.bidet': 'Bidé',
-  'team.kitchen': 'Fregadero',
+  'team.kitchen': 'Cocina',
   'team.hottub': 'Jacuzzi',
 
   'status.connected': 'Conectado',
@@ -280,7 +280,7 @@ export const pt: Record<TranslationKey, string> = {
   'team.toilet': 'Privada',
   'team.basin': 'Lavatório',
   'team.bidet': 'Bidê',
-  'team.kitchen': 'Pia da Cozinha',
+  'team.kitchen': 'Cozinha',
   'team.hottub': 'Jacuzzi',
 
   'status.connected': 'Conectado',
@@ -357,7 +357,7 @@ export const fr: Record<TranslationKey, string> = {
   'team.toilet': 'Toilettes',
   'team.basin': 'Vasque',
   'team.bidet': 'Bidet',
-  'team.kitchen': 'Évier',
+  'team.kitchen': 'Cuisine',
   'team.hottub': 'Jacuzzi',
 
   'status.connected': 'Connecté',
