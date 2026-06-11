@@ -27,6 +27,8 @@ type Player = {
   // never eligible for a match, doesn't count as a side, can't win.
   noMotion: boolean;
   team: TeamId | null;
+  // Rounds this player (or their team) has won this lobby session.
+  wins: number;
 };
 
 // Per-connection player state. Stored via connection.setState() in the
@@ -43,6 +45,10 @@ type PlayerState = {
   // never sends motionSupport) keeps today's behavior.
   motionSupported: boolean;
   team: TeamId | null;
+  // Rounds won this lobby session. Persists across rounds (only per-round flags
+  // reset) and rides along in the hibernatable socket attachment; discarded
+  // when the connection closes.
+  wins: number;
 };
 
 const DEFAULT_PLAYER_STATE: PlayerState = {
@@ -52,6 +58,7 @@ const DEFAULT_PLAYER_STATE: PlayerState = {
   visible: true,
   motionSupported: true,
   team: null,
+  wins: 0,
 };
 
 // A testing-mode bot: a virtual lobby participant added from the testing UI
@@ -68,6 +75,8 @@ type Bot = {
   eliminated: boolean;
   dropAfterMs: number;
   dropAt: number | null;
+  // Rounds this bot (or its team) has won this lobby session.
+  wins: number;
 };
 
 // Room-level state, persisted as one JSON value under the 'room' storage key so
@@ -381,6 +390,7 @@ export class Main extends Server {
           eliminated: false,
           dropAfterMs: this.botDropMsFromName(name),
           dropAt: null,
+          wins: 0,
         };
         this.saveRoom();
         this.broadcastState();
@@ -532,6 +542,7 @@ export class Main extends Server {
         away: !entry.visible,
         noMotion: !entry.motionSupported,
         team: entry.team,
+        wins: entry.wins,
       };
     });
     for (const b of Object.values(this.room.bots)) {
@@ -543,6 +554,7 @@ export class Main extends Server {
         away: false,
         noMotion: false,
         team: b.team,
+        wins: b.wins,
       });
     }
     return players;
@@ -644,9 +656,30 @@ export class Main extends Server {
     if (this.room.teamsActive && survivor?.team) {
       this.room.winnerTeam = survivor.team;
       this.room.winnerId = null;
+      // A team win credits every member of that team — including teammates
+      // eliminated earlier in the round.
+      for (const c of this.getConnections<PlayerState>()) {
+        const p = this.playerOf(c);
+        if (p.team === survivor.team) this.patchPlayer(c, { wins: p.wins + 1 });
+      }
+      for (const b of Object.values(this.room.bots)) {
+        if (b.team === survivor.team) b.wins += 1;
+      }
     } else {
       this.room.winnerTeam = null;
       this.room.winnerId = survivor?.id ?? null;
+      // A lone survivor wins solo — credit just them (connection or bot).
+      if (survivor) {
+        const conn = [...this.getConnections<PlayerState>()].find(
+          (c) => c.id === survivor.id,
+        );
+        if (conn) {
+          this.patchPlayer(conn, { wins: this.playerOf(conn).wins + 1 });
+        } else {
+          const bot = this.room.bots[survivor.id];
+          if (bot) bot.wins += 1;
+        }
+      }
     }
     this.room.readyEndsAt = null;
     this.room.holdEndsAt = null;

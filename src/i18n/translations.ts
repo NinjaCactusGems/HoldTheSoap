@@ -40,6 +40,7 @@ export const en = {
   'room.startMatch': 'Start match',
   'room.waitingEveryone': 'Waiting for everyone…',
   'room.leave': 'Leave',
+  'room.wins': '{count} wins',
 
   'status.connected': 'Connected',
   'status.connecting': 'Connecting',
@@ -106,6 +107,7 @@ export const de: Record<TranslationKey, string> = {
   'room.startMatch': 'Spiel starten',
   'room.waitingEveryone': 'Warte auf alle…',
   'room.leave': 'Verlassen',
+  'room.wins': '{count} Siege',
 
   'status.connected': 'Verbunden',
   'status.connecting': 'Verbinde',
