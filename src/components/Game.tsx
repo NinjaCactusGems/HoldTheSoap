@@ -360,7 +360,7 @@ function WinnerView({
           className="font-serif text-5xl font-bold tracking-tight text-center px-6"
           style={{ color: winningTeam.color }}
         >
-          {t('game.teamWins', { team: winningTeam.label })}
+          {t('game.teamWins', { team: t(`team.${winningTeam.id}`) })}
         </div>
       ) : (
         <div className="font-serif text-5xl font-bold tracking-tight text-center px-6">

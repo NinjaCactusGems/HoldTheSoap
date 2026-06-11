@@ -20,19 +20,20 @@ export type TeamId =
 
 export type Team = {
   id: TeamId;
-  label: string;
   color: string;
 };
 
+// Display names live in the i18n dictionary as `team.<id>` keys; render them
+// via t(`team.${id}`).
 export const TEAMS: Team[] = [
-  { id: 'shower', label: 'Shower', color: '#C97BA0' }, // soft rose pink
-  { id: 'sink', label: 'Sink', color: '#B8895A' }, // warm sand
-  { id: 'bathtub', label: 'Bathtub', color: '#7E6B4A' }, // bronze clay
-  { id: 'toilet', label: 'Toilet', color: '#C9A227' }, // dusty gold
-  { id: 'basin', label: 'Basin', color: '#C56A2E' }, // russet orange
-  { id: 'bidet', label: 'Bidet', color: '#5C6B8A' }, // slate blue
-  { id: 'kitchen', label: 'Kitchen Sink', color: '#6E4F3A' }, // tawny brown
-  { id: 'hottub', label: 'Hot Tub', color: '#3F7A78' }, // deep teal
+  { id: 'shower', color: '#C97BA0' }, // soft rose pink
+  { id: 'sink', color: '#B8895A' }, // warm sand
+  { id: 'bathtub', color: '#7E6B4A' }, // bronze clay
+  { id: 'toilet', color: '#C9A227' }, // dusty gold
+  { id: 'basin', color: '#C56A2E' }, // russet orange
+  { id: 'bidet', color: '#5C6B8A' }, // slate blue
+  { id: 'kitchen', color: '#6E4F3A' }, // tawny brown
+  { id: 'hottub', color: '#3F7A78' }, // deep teal
 ];
 
 export const TEAM_IDS: TeamId[] = TEAMS.map((t) => t.id);
