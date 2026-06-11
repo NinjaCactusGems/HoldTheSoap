@@ -17,6 +17,7 @@ export type Player = {
   away: boolean;
   noMotion: boolean;
   team: TeamId | null;
+  wins: number;
 };
 
 const REACTION_EMOJI: Record<Reaction, string> = {

@@ -40,6 +40,9 @@ const APPLAUSE_FADE_OUT_MS = 2500;
 // Teams unlock at 3+ players (below that it's a free-for-all). Kept in sync with
 // the server's MIN_PLAYERS_FOR_TEAMS.
 const MIN_PLAYERS_FOR_TEAMS = 3;
+// Beyond this many wins the soap row collapses from one icon per win to a
+// single icon plus "×N" so the row never overflows.
+const SOAP_DISPLAY_CAP = 5;
 
 type Player = {
   id: string;
@@ -49,7 +52,28 @@ type Player = {
   away: boolean;
   noMotion: boolean;
   team: TeamId | null;
+  wins: number;
 };
+
+// A player's name with a small soap-tally row beneath it: one 🧼 per round won
+// this session, collapsing to "🧼×N" past SOAP_DISPLAY_CAP. Nothing renders
+// until a player has at least one win, so the row first appears after a round.
+function NameWithSoaps({ name, wins }: { name: string; wins: number }) {
+  const { t } = useI18n();
+  return (
+    <div className="flex min-w-0 flex-1 flex-col">
+      <span className="truncate text-ink">{name}</span>
+      {wins > 0 && (
+        <span
+          className="text-[11px] leading-none"
+          aria-label={t('room.wins', { count: wins })}
+        >
+          {wins > SOAP_DISPLAY_CAP ? `🧼×${wins}` : '🧼'.repeat(wins)}
+        </span>
+      )}
+    </div>
+  );
+}
 
 type LobbyState =
   | { phase: 'idle' }
@@ -557,9 +581,7 @@ function Room({
                     </form>
                   ) : isBot && testing ? (
                     <>
-                      <span className="min-w-0 flex-1 truncate text-ink">
-                        {p.name}
-                      </span>
+                      <NameWithSoaps name={p.name} wins={p.wins} />
                       {players.length >= MIN_PLAYERS_FOR_TEAMS ? (
                         <select
                           value={p.team ?? ''}
@@ -599,9 +621,7 @@ function Room({
                     </>
                   ) : (
                     <>
-                      <span className="min-w-0 flex-1 truncate text-ink">
-                        {p.name}
-                      </span>
+                      <NameWithSoaps name={p.name} wins={p.wins} />
                       {team && (
                         <span
                           className="shrink-0 rounded-full px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-paper"
