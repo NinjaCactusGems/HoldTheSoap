@@ -597,7 +597,7 @@ function Room({
                           <option value="">{t('room.teamSolo')}</option>
                           {TEAMS.map((tm) => (
                             <option key={tm.id} value={tm.id}>
-                              {tm.label}
+                              {t(`team.${tm.id}`)}
                             </option>
                           ))}
                         </select>
@@ -607,7 +607,7 @@ function Room({
                             className="shrink-0 rounded-full px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-paper"
                             style={{ backgroundColor: team.color }}
                           >
-                            {team.label}
+                            {t(`team.${team.id}`)}
                           </span>
                         )
                       )}
@@ -627,7 +627,7 @@ function Room({
                           className="shrink-0 rounded-full px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-paper"
                           style={{ backgroundColor: team.color }}
                         >
-                          {team.label}
+                          {t(`team.${team.id}`)}
                         </span>
                       )}
                       {p.noMotion && (
@@ -681,7 +681,7 @@ function Room({
             <option value="">{t('room.teamSolo')}</option>
             {TEAMS.map((tm) => (
               <option key={tm.id} value={tm.id}>
-                {tm.label}
+                {t(`team.${tm.id}`)}
               </option>
             ))}
           </select>

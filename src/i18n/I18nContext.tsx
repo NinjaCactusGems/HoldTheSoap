@@ -7,17 +7,20 @@ import {
   useState,
   type ReactNode,
 } from 'react';
-import { dict, type Locale, type TranslationKey } from './translations';
+import { dict, SUPPORTED, type Locale, type TranslationKey } from './translations';
 
 const LOCALE_KEY = 'holdthesoap:locale';
 
 // Stored preference wins; otherwise fall back to the browser/OS language
-// (any de* variant → German), then English.
+// (any supported prefix, e.g. pt-BR → pt), then English.
 function detectLocale(): Locale {
   if (typeof window === 'undefined') return 'en';
   const stored = window.localStorage.getItem(LOCALE_KEY);
-  if (stored === 'en' || stored === 'de') return stored;
-  return navigator.language?.toLowerCase().startsWith('de') ? 'de' : 'en';
+  if (stored && (SUPPORTED as string[]).includes(stored)) {
+    return stored as Locale;
+  }
+  const lang = navigator.language?.toLowerCase() ?? '';
+  return SUPPORTED.find((l) => lang.startsWith(l)) ?? 'en';
 }
 
 type I18nContextValue = {

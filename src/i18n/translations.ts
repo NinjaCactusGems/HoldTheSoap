@@ -1,10 +1,11 @@
-// Flat, dotted-key translation tables. `en` is the source of truth; `de` is
-// typed against it so the typechecker flags any missing/extra German key.
-// The four "How to play" rules contain inline <strong> markup and live as JSX
-// fragments in ./richText instead.
+// Flat, dotted-key translation tables. `en` is the source of truth; every
+// other locale is typed against it so the typechecker flags any missing/extra
+// key. The four "How to play" rules contain inline <strong> markup and live as
+// JSX fragments in ./richText instead.
 
 export const en = {
   'app.title': 'HOLD THE SOAP',
+  'app.language': 'Language',
 
   'howToPlay.title': 'How to play',
   'howToPlay.intro':
@@ -42,6 +43,15 @@ export const en = {
   'room.leave': 'Leave',
   'room.wins': '{count} wins',
 
+  'team.shower': 'Shower',
+  'team.sink': 'Sink',
+  'team.bathtub': 'Bathtub',
+  'team.toilet': 'Toilet',
+  'team.basin': 'Basin',
+  'team.bidet': 'Bidet',
+  'team.kitchen': 'Kitchen',
+  'team.hottub': 'Hot Tub',
+
   'status.connected': 'Connected',
   'status.connecting': 'Connecting',
   'status.offline': 'Offline',
@@ -72,6 +82,7 @@ export type TranslationKey = keyof typeof en;
 
 export const de: Record<TranslationKey, string> = {
   'app.title': 'HALTE DIE SEIFE',
+  'app.language': 'Sprache',
 
   'howToPlay.title': 'Spielanleitung',
   'howToPlay.intro':
@@ -109,6 +120,15 @@ export const de: Record<TranslationKey, string> = {
   'room.leave': 'Verlassen',
   'room.wins': '{count} Siege',
 
+  'team.shower': 'Dusche',
+  'team.sink': 'Waschbecken',
+  'team.bathtub': 'Badewanne',
+  'team.toilet': 'Toilette',
+  'team.basin': 'Becken',
+  'team.bidet': 'Bidet',
+  'team.kitchen': 'Küche',
+  'team.hottub': 'Whirlpool',
+
   'status.connected': 'Verbunden',
   'status.connecting': 'Verbinde',
   'status.offline': 'Offline',
@@ -136,8 +156,239 @@ export const de: Record<TranslationKey, string> = {
   'footer.privacy': 'Datenschutz',
 };
 
-export const dict = { en, de } as const;
+// Neutral Spanish, informal tú — mirrors the German du-form tone.
+export const es: Record<TranslationKey, string> = {
+  'app.title': 'SUJETA EL JABÓN',
+  'app.language': 'Idioma',
 
-export type Locale = keyof typeof dict; // 'en' | 'de'
+  'howToPlay.title': 'Cómo se juega',
+  'howToPlay.intro':
+    'SUJETA EL JABÓN es un juego de movimiento y equilibrio que se juega en el mundo real con el teléfono en la mano.',
 
-export const SUPPORTED: Locale[] = ['en', 'de'];
+  'lobby.create': 'Crear grupo',
+  'lobby.or': 'o',
+  'lobby.codePlaceholder': 'CÓDIGO DEL GRUPO',
+  'lobby.join': 'Unirse',
+
+  'room.group': 'Grupo',
+  'room.linkCopied': 'Enlace copiado',
+  'room.copyLink': 'Copiar enlace',
+  'room.players': 'Jugadores · {count}',
+  'room.waiting': 'Esperando conexión…',
+  'room.away': 'Ausente',
+  'room.ready': 'Listo',
+  'room.notReady': 'No listo',
+  'room.save': 'Guardar',
+  'room.you': 'Tú',
+  'room.rename': 'Renombrar',
+  'room.readyDone': 'Listo ✓',
+  'room.readyPrompt': '¿Listo?',
+  'room.team': 'Equipo',
+  'room.teamSolo': 'Sin equipo (solo)',
+  'room.needTeams': 'Hacen falta al menos dos bandos',
+  'room.needPlayers': 'Hacen falta al menos dos jugadores',
+  'room.addBot': 'Añadir bot',
+  'room.removeBot': 'Quitar',
+  'room.motionWarning':
+    'Este dispositivo no tiene sensores de movimiento, así que mirarás como espectador. Abre holdthesoap.com en un teléfono para jugar.',
+  'room.spectator': 'Espectador',
+  'room.startMatch': 'Empezar partida',
+  'room.waitingEveryone': 'Esperando a todos…',
+  'room.leave': 'Salir',
+  'room.wins': '{count} victorias',
+
+  'team.shower': 'Ducha',
+  'team.sink': 'Lavabo',
+  'team.bathtub': 'Bañera',
+  'team.toilet': 'Inodoro',
+  'team.basin': 'Lavamanos',
+  'team.bidet': 'Bidé',
+  'team.kitchen': 'Cocina',
+  'team.hottub': 'Jacuzzi',
+
+  'status.connected': 'Conectado',
+  'status.connecting': 'Conectando',
+  'status.offline': 'Sin conexión',
+
+  'game.getReady': 'Prepárense',
+  'game.go': '¡YA!',
+  'game.holdStillEllipsis': 'No te muevas…',
+  'game.holdStill': 'No te muevas',
+  'game.hold': 'Mantén el teléfono plano y quieto',
+  'game.careful': '¡Cuidado!',
+  'game.soapStamp': 'JABÓN',
+  'game.droppedSoap': 'Se te cayó el jabón',
+  'game.out': 'FUERA',
+  'game.stillIn': 'quedan {count}',
+  'game.spectating':
+    'Estás de espectador — este dispositivo no tiene sensores de movimiento',
+  'game.youWin': '¡Ganaste!',
+  'game.winner': 'Ganador',
+  'game.teamWins': '¡{team} gana!',
+  'game.noOne': 'Nadie',
+  'game.backToLobby': 'Volver a la sala en {seconds}…',
+
+  'support.coffee': '¿Te gusta el juego? Invítame a un café :)',
+
+  'footer.privacy': 'Privacidad',
+};
+
+// Brazilian Portuguese (celular, tela, você).
+export const pt: Record<TranslationKey, string> = {
+  'app.title': 'SEGURA O SABONETE',
+  'app.language': 'Idioma',
+
+  'howToPlay.title': 'Como jogar',
+  'howToPlay.intro':
+    'SEGURA O SABONETE é um jogo de movimento e equilíbrio que você joga no mundo real com o celular na mão.',
+
+  'lobby.create': 'Criar grupo',
+  'lobby.or': 'ou',
+  'lobby.codePlaceholder': 'CÓDIGO DO GRUPO',
+  'lobby.join': 'Entrar',
+
+  'room.group': 'Grupo',
+  'room.linkCopied': 'Link copiado',
+  'room.copyLink': 'Copiar link',
+  'room.players': 'Jogadores · {count}',
+  'room.waiting': 'Aguardando conexão…',
+  'room.away': 'Ausente',
+  'room.ready': 'Pronto',
+  'room.notReady': 'Não está pronto',
+  'room.save': 'Salvar',
+  'room.you': 'Você',
+  'room.rename': 'Renomear',
+  'room.readyDone': 'Pronto ✓',
+  'room.readyPrompt': 'Pronto?',
+  'room.team': 'Time',
+  'room.teamSolo': 'Sem time (solo)',
+  'room.needTeams': 'Precisa de pelo menos dois lados',
+  'room.needPlayers': 'Precisa de pelo menos dois jogadores',
+  'room.addBot': 'Adicionar bot',
+  'room.removeBot': 'Remover',
+  'room.motionWarning':
+    'Este aparelho não tem sensores de movimento, então você vai assistir como espectador. Abra holdthesoap.com num celular para jogar.',
+  'room.spectator': 'Espectador',
+  'room.startMatch': 'Começar partida',
+  'room.waitingEveryone': 'Aguardando todo mundo…',
+  'room.leave': 'Sair',
+  'room.wins': '{count} vitórias',
+
+  'team.shower': 'Chuveiro',
+  'team.sink': 'Pia',
+  'team.bathtub': 'Banheira',
+  'team.toilet': 'Privada',
+  'team.basin': 'Lavatório',
+  'team.bidet': 'Bidê',
+  'team.kitchen': 'Cozinha',
+  'team.hottub': 'Jacuzzi',
+
+  'status.connected': 'Conectado',
+  'status.connecting': 'Conectando',
+  'status.offline': 'Sem conexão',
+
+  'game.getReady': 'Preparem-se',
+  'game.go': 'JÁ!',
+  'game.holdStillEllipsis': 'Não se mexa…',
+  'game.holdStill': 'Não se mexa',
+  'game.hold': 'Segure o celular reto e parado',
+  'game.careful': 'Cuidado!',
+  'game.soapStamp': 'SABONETE',
+  'game.droppedSoap': 'Você deixou o sabonete cair',
+  'game.out': 'FORA',
+  'game.stillIn': '{count} ainda no jogo',
+  'game.spectating':
+    'Você está assistindo — este aparelho não tem sensores de movimento',
+  'game.youWin': 'Você venceu!',
+  'game.winner': 'Vencedor',
+  'game.teamWins': '{team} venceu!',
+  'game.noOne': 'Ninguém',
+  'game.backToLobby': 'Voltando para a sala em {seconds}…',
+
+  'support.coffee': 'Curtiu o jogo? Que tal me pagar um café :)',
+
+  'footer.privacy': 'Privacidade',
+};
+
+// French, informal tu.
+export const fr: Record<TranslationKey, string> = {
+  'app.title': 'TIENS LE SAVON',
+  'app.language': 'Langue',
+
+  'howToPlay.title': 'Comment jouer',
+  'howToPlay.intro':
+    'TIENS LE SAVON est un jeu de mouvement et d’équilibre qui se joue dans le monde réel, téléphone en main.',
+
+  'lobby.create': 'Créer un groupe',
+  'lobby.or': 'ou',
+  'lobby.codePlaceholder': 'CODE DU GROUPE',
+  'lobby.join': 'Rejoindre',
+
+  'room.group': 'Groupe',
+  'room.linkCopied': 'Lien copié',
+  'room.copyLink': 'Copier le lien',
+  'room.players': 'Joueurs · {count}',
+  'room.waiting': 'En attente de connexion…',
+  'room.away': 'Absent',
+  'room.ready': 'Prêt',
+  'room.notReady': 'Pas prêt',
+  'room.save': 'Enregistrer',
+  'room.you': 'Toi',
+  'room.rename': 'Renommer',
+  'room.readyDone': 'Prêt ✓',
+  'room.readyPrompt': 'Prêt ?',
+  'room.team': 'Équipe',
+  'room.teamSolo': 'Sans équipe (solo)',
+  'room.needTeams': 'Il faut au moins deux camps',
+  'room.needPlayers': 'Il faut au moins deux joueurs',
+  'room.addBot': 'Ajouter un bot',
+  'room.removeBot': 'Retirer',
+  'room.motionWarning':
+    'Pas de capteurs de mouvement ici, tu regarderas donc en spectateur. Ouvre holdthesoap.com sur un téléphone pour jouer.',
+  'room.spectator': 'Spectateur',
+  'room.startMatch': 'Lancer la partie',
+  'room.waitingEveryone': 'En attente de tout le monde…',
+  'room.leave': 'Quitter',
+  'room.wins': '{count} victoires',
+
+  'team.shower': 'Douche',
+  'team.sink': 'Lavabo',
+  'team.bathtub': 'Baignoire',
+  'team.toilet': 'Toilettes',
+  'team.basin': 'Vasque',
+  'team.bidet': 'Bidet',
+  'team.kitchen': 'Cuisine',
+  'team.hottub': 'Jacuzzi',
+
+  'status.connected': 'Connecté',
+  'status.connecting': 'Connexion',
+  'status.offline': 'Hors ligne',
+
+  'game.getReady': 'Préparez-vous',
+  'game.go': 'PARTEZ !',
+  'game.holdStillEllipsis': 'Ne bouge plus…',
+  'game.holdStill': 'Ne bouge plus',
+  'game.hold': 'Tiens le téléphone à plat, sans bouger',
+  'game.careful': 'Attention !',
+  'game.soapStamp': 'SAVON',
+  'game.droppedSoap': 'Tu as fait tomber le savon',
+  'game.out': 'ÉLIMINÉ',
+  'game.stillIn': 'encore {count} en jeu',
+  'game.spectating':
+    'Tu es spectateur — cet appareil n’a pas de capteurs de mouvement',
+  'game.youWin': 'Tu as gagné !',
+  'game.winner': 'Vainqueur',
+  'game.teamWins': '{team} gagne !',
+  'game.noOne': 'Personne',
+  'game.backToLobby': 'Retour au salon dans {seconds}…',
+
+  'support.coffee': 'Le jeu te plaît ? Offre-moi un café :)',
+
+  'footer.privacy': 'Confidentialité',
+};
+
+export const dict = { en, de, es, pt, fr } as const;
+
+export type Locale = keyof typeof dict; // 'en' | 'de' | 'es' | 'pt' | 'fr'
+
+export const SUPPORTED: Locale[] = ['en', 'de', 'es', 'pt', 'fr'];
