@@ -145,6 +145,32 @@ export const sfx = {
     });
   },
 
+  // A single synthesized water-drop "bloop" for the hold phase: a short sine
+  // with an upward pitch glide, randomized per pop so a stream of them never
+  // sounds metronomic. `intensity` (0–1, how close this player is to being
+  // eliminated) nudges the pop brighter and slightly louder.
+  bubble(intensity = 0) {
+    const ac = getCtx();
+    if (!ac) return;
+    const t0 = ac.currentTime;
+    const base = 350 + Math.random() * 400 + intensity * 250; // jittered start pitch
+    const dur = 0.06 + Math.random() * 0.06;
+    const osc = ac.createOscillator();
+    osc.type = 'sine';
+    osc.frequency.setValueAtTime(base, t0);
+    osc.frequency.exponentialRampToValueAtTime(
+      base * (1.8 + Math.random() * 0.6), // the upward "bloop" glide
+      t0 + dur,
+    );
+    const g = ac.createGain();
+    g.gain.setValueAtTime(0.0001, t0);
+    g.gain.exponentialRampToValueAtTime(0.12 + 0.1 * intensity, t0 + 0.012);
+    g.gain.exponentialRampToValueAtTime(0.0001, t0 + dur);
+    osc.connect(g).connect(ac.destination);
+    osc.start(t0);
+    osc.stop(t0 + dur + 0.02);
+  },
+
   // A smiley tap: plays on every device (wired to the broadcast reaction event).
   reaction(name: string) {
     const spec = REACTION_NOTES[name];

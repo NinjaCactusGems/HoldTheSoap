@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { Bubbles } from './Bubbles';
+import { useBubbleSfx } from '../hooks/useBubbleSfx';
 import { useI18n } from '../i18n/I18nContext';
 import { haptics } from '../lib/haptics';
 import { sfx } from '../lib/sfx';
@@ -191,6 +192,15 @@ function HoldingView({
   const { t } = useI18n();
   const me = players.find((p) => p.id === myId);
   const iAmOut = me?.eliminated ?? false;
+
+  // Audio pressure gauge: random bubble pops that get exponentially more
+  // frequent as motion nears either drop threshold (shake or tilt) — the same
+  // closeness signal the ⚠️ warning watches. Silent once you're out.
+  const closeness = Math.max(
+    detector.magnitude / detector.threshold,
+    detector.tilt / TILT_THRESHOLD_DEG,
+  );
+  useBubbleSfx(!iAmOut, closeness);
 
   // lastShakeAt persists across phases, so ignore any spike from before
   // the hold phase began. Set the gate once when this view first mounts.

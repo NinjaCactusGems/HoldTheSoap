@@ -6,11 +6,8 @@ import { generateRandomName, generateBotName } from '../lib/names';
 import { Game, type Phase, type Reaction } from './Game';
 import { TEAMS, teamById, type TeamId } from '../lib/teams';
 import { motionNeedsGesture, useShakeDetector } from '../hooks/useShakeDetector';
-import { useMatchMusic } from '../hooks/useMatchMusic';
 import { useServerClock } from '../hooks/useServerClock';
-import { useSyncedTempo } from '../hooks/useSyncedTempo';
 import { useWakeLock } from '../hooks/useWakeLock';
-import { TEMPO_THRESHOLD, type Tempo } from '../lib/tempo';
 import { sfx } from '../lib/sfx';
 import { useI18n } from '../i18n/I18nContext';
 
@@ -18,14 +15,21 @@ const PARTY_HOST = import.meta.env.VITE_PARTY_HOST || 'localhost:1999';
 
 const PLAYER_NAME_KEY = 'holdthesoap:playerName';
 
-// The hold phase starts at the Normal/medium threshold (7 m/s², per CLAUDE.md); tempo
-// shifts move it to Sensitive (slow) or Forgiving (fast) mid-round.
-const HOLD_THRESHOLD = TEMPO_THRESHOLD.normal;
+// The hold phase runs at the fixed Normal/medium threshold (7 m/s², per the
+// CLAUDE.md presets) for everyone, all round.
+const HOLD_THRESHOLD = 7;
 
-// After a win the server returns to the lobby, but we keep the soundtrack going
-// this much longer so it rides through the transition and fades out as the
-// post-game lobby panel fades in, rather than cutting the moment it appears.
-const POSTGAME_HOLD_MS = 1000;
+// NAT/proxy keepalive cadence. The literal 'k' frame is answered by the
+// Cloudflare runtime itself (setWebSocketAutoResponse) without waking the
+// hibernated room server — never replace this with a JSON message.
+const KEEPALIVE_INTERVAL_MS = 25_000;
+
+// "Still playing" heartbeat cadence during the hold phase. A perfectly steady
+// phone sends nothing else, so without this the server's abandoned-round
+// watchdog couldn't tell a careful room from a dead one. Must be comfortably
+// inside the server's HOLD_ABANDON_MS (2 min) even with background-tab timer
+// throttling (~1/min).
+const ALIVE_INTERVAL_MS = 60_000;
 
 // Applause timing on the losing phones: a beat of silence after the winner is
 // revealed before it starts, then a slow fade-out timed to finish as the lobby
@@ -178,8 +182,6 @@ function Room({
   const [winnerEndsAt, setWinnerEndsAt] = useState<number | null>(null);
   const [winnerId, setWinnerId] = useState<string | null>(null);
   const [winnerTeam, setWinnerTeam] = useState<TeamId | null>(null);
-  const [tempo, setTempo] = useState<Tempo>('normal');
-  const [tempoEffectiveAt, setTempoEffectiveAt] = useState<number | null>(null);
   // The winner we keep showing once the server returns to the lobby, so the
   // lobby can slide in beneath the celebration. Cleared when a new round starts.
   const [postGameWinnerId, setPostGameWinnerId] = useState<string | null>(null);
@@ -226,6 +228,7 @@ function Room({
       setStatus('closed');
     },
     onMessage(event: MessageEvent) {
+      if (event.data === 'k') return; // keepalive echo, not JSON
       try {
         const data = JSON.parse(event.data) as Partial<{
           type: string;
@@ -234,8 +237,6 @@ function Room({
           winnerEndsAt: number | null;
           winnerId: string | null;
           winnerTeam: TeamId | null;
-          tempo: Tempo;
-          tempoEffectiveAt: number | null;
           players: Player[];
           reaction: Reaction;
         }>;
@@ -246,8 +247,6 @@ function Room({
           setWinnerEndsAt(data.winnerEndsAt ?? null);
           setWinnerId(data.winnerId ?? null);
           setWinnerTeam(data.winnerTeam ?? null);
-          setTempo(data.tempo ?? 'normal');
-          setTempoEffectiveAt(data.tempoEffectiveAt ?? null);
           setPlayers(Array.isArray(data.players) ? data.players : []);
           // Remember the winner so the post-game lobby can keep showing it; a
           // new round (ready/holding) clears it.
@@ -317,48 +316,38 @@ function Room({
   }, [status, socket, motionResolved, motionUnsupported]);
 
   // Server clock sync: converts server timestamps to local time so every device
-  // in the room acts in lockstep (and a foundation for future server-driven
-  // sync like changing the track tempo for everyone at once).
-  const { toLocalTime } = useServerClock(socket, status === 'open');
+  // in the room acts in lockstep. Pings only in bursts — at connect and again
+  // as each round's countdown starts (readyEndsAt is fresh per round) — so a
+  // quiet room sends nothing and the hibernating server can sleep.
+  const { toLocalTime } = useServerClock(socket, status === 'open', readyEndsAt);
+
+  // Keepalive: NATs and proxies drop idle WebSockets, and the clock sync no
+  // longer trickles. The server's auto-response answers without waking it.
+  // (Background tabs throttle this interval; partysocket reconnects cover it.)
+  useEffect(() => {
+    if (status !== 'open') return;
+    const id = window.setInterval(() => {
+      if (socket.readyState === WebSocket.OPEN) socket.send('k');
+    }, KEEPALIVE_INTERVAL_MS);
+    return () => window.clearInterval(id);
+  }, [status, socket]);
 
   const me = players.find((p) => p.id === myId);
 
-  // Whether the match soundtrack should be running. Live through any non-lobby
-  // phase; once the server returns to the lobby it keeps going for a short beat
-  // if we're celebrating a win (post-game), so the music carries the transition
-  // and fades out as the lobby panel fades in — then stops, so it never plays
-  // before the next match starts.
-  const [musicActive, setMusicActive] = useState(false);
+  // "Still playing" heartbeat: while a round is held and we're still in it,
+  // tell the server live players remain, so its watchdog only ends rounds
+  // that everyone has actually abandoned. Eliminated players and spectators
+  // stay quiet — their liveness doesn't keep a round open.
+  const holdingAndAlive = phase === 'holding' && me?.eliminated === false;
   useEffect(() => {
-    if (phase !== 'lobby') {
-      setMusicActive(true);
-      return;
-    }
-    if (!postGameWinnerId && !postGameWinnerTeam) {
-      setMusicActive(false);
-      return;
-    }
-    const id = window.setTimeout(() => setMusicActive(false), POSTGAME_HOLD_MS);
-    return () => window.clearTimeout(id);
-  }, [phase, postGameWinnerId, postGameWinnerTeam]);
-
-  // Looping match soundtrack: starts when the "Get Ready" countdown hits zero
-  // (readyEndsAt) — in lockstep across devices via the server clock — shifts
-  // tempo with the room, and goes silent for this player while eliminated.
-  useMatchMusic(
-    readyEndsAt,
-    Boolean(me?.eliminated),
-    toLocalTime,
-    tempo,
-    tempoEffectiveAt,
-    musicActive,
-  );
-
-  // Match the shake sensitivity to the tempo, in lockstep with the music:
-  // slow → Sensitive (twitchy), fast → Forgiving (needs a real shove).
-  useSyncedTempo(tempo, tempoEffectiveAt, toLocalTime, (next) =>
-    detector.setThreshold(TEMPO_THRESHOLD[next]),
-  );
+    if (status !== 'open' || !holdingAndAlive) return;
+    const id = window.setInterval(() => {
+      if (socket.readyState === WebSocket.OPEN) {
+        socket.send(JSON.stringify({ type: 'alive' }));
+      }
+    }, ALIVE_INTERVAL_MS);
+    return () => window.clearInterval(id);
+  }, [status, socket, holdingAndAlive]);
 
   // When a winner is crowned, the losers' phones applaud — each phone loops the
   // applause clip at a slightly randomized pitch/speed, so a roomful of phones
