@@ -379,7 +379,7 @@ function WinnerView({
           key={r}
           type="button"
           onClick={() => onReaction(r)}
-          className="grid h-16 w-16 place-items-center rounded-2xl border border-line bg-paper-raised text-4xl shadow-sm active:scale-90 transition"
+          className="grid h-16 w-16 place-items-center rounded-2xl border border-line bg-paper-raised text-4xl shadow-sm active:scale-95 transition"
           aria-label={r}
         >
           {REACTION_EMOJI[r]}

@@ -137,16 +137,16 @@ function IdleLobby({ onEnter }: { onEnter: (code: string) => void }) {
   const canJoin = normalized.length >= 3;
 
   return (
-    <div className="w-full max-w-sm rounded-2xl border border-line bg-paper-raised/80 p-5 flex flex-col gap-4">
+    <div className="surface w-full max-w-sm p-6 flex flex-col gap-5">
       <button
         type="button"
         onClick={() => onEnter(generateRoomCode())}
-        className="w-full rounded-full bg-go px-6 py-3 text-base font-semibold text-paper shadow-lg shadow-go/20 active:scale-95 transition"
+        className="btn btn-primary w-full"
       >
         {t('lobby.create')}
       </button>
 
-      <div className="flex items-center gap-2 text-xs text-ink-faint">
+      <div className="my-1 flex items-center gap-2 text-xs text-ink-faint">
         <div className="h-px flex-1 bg-line" />
         <span>{t('lobby.or')}</span>
         <div className="h-px flex-1 bg-line" />
@@ -169,13 +169,9 @@ function IdleLobby({ onEnter }: { onEnter: (code: string) => void }) {
           value={joinCode}
           onChange={(e) => setJoinCode(e.target.value)}
           maxLength={8}
-          className="w-full rounded-xl border border-line bg-paper px-4 py-3 text-center text-lg font-mono tracking-[0.3em] uppercase text-ink placeholder:text-ink-faint focus:outline-none focus:border-ink-muted"
+          className="field text-center text-lg font-mono tracking-[0.12em] uppercase placeholder:normal-case placeholder:font-medium placeholder:tracking-normal"
         />
-        <button
-          type="submit"
-          disabled={!canJoin}
-          className="w-full rounded-full bg-ink px-6 py-3 text-base font-semibold text-paper active:scale-95 transition disabled:bg-line disabled:text-ink-faint"
-        >
+        <button type="submit" disabled={!canJoin} className="btn btn-primary w-full">
           {t('lobby.join')}
         </button>
       </form>
@@ -495,7 +491,7 @@ function Room({
   }
 
   const lobbyPanel = (
-    <div className="w-full max-w-sm rounded-2xl border border-line bg-paper-raised/80 p-5 flex flex-col gap-4">
+    <div className="surface w-full max-w-sm p-6 flex flex-col gap-5">
       <div className="flex items-baseline justify-between">
         <h2 className="text-sm font-semibold uppercase tracking-wider text-ink-muted">
           {t('room.group')}
@@ -511,11 +507,7 @@ function Room({
         <div className="rounded-xl bg-paper-raised p-3">
           <QRCodeSVG value={shareUrl} size={140} bgColor="#FFFFFF" fgColor="#243743" />
         </div>
-        <button
-          type="button"
-          onClick={copy}
-          className="w-full rounded-full border border-line bg-paper px-4 py-2 text-sm font-medium text-ink active:scale-95 transition"
-        >
+        <button type="button" onClick={copy} className="btn btn-secondary w-full">
           {t(copied ? 'room.linkCopied' : 'room.copyLink')}
         </button>
       </div>
@@ -537,7 +529,7 @@ function Room({
               return (
                 <li
                   key={p.id}
-                  className={`flex items-center gap-2 rounded-lg px-2.5 py-2 text-sm ${
+                  className={`flex items-center gap-2 rounded-xl px-2.5 py-2 text-sm ${
                     isMe
                       ? 'bg-go/10 ring-1 ring-go/40'
                       : 'bg-paper'
@@ -570,11 +562,11 @@ function Room({
                         maxLength={24}
                         onChange={(e) => setDraftName(e.target.value)}
                         onBlur={saveName}
-                        className="min-w-0 flex-1 rounded-md border border-line bg-paper px-2 py-1 text-sm text-ink focus:outline-none focus:border-go"
+                        className="field min-w-0 flex-1 px-2.5 py-1 text-sm"
                       />
                       <button
                         type="submit"
-                        className="shrink-0 rounded-md bg-go px-2 py-1 text-xs font-semibold text-paper"
+                        className="btn-ghost border-go bg-go text-paper"
                       >
                         {t('room.save')}
                       </button>
@@ -592,7 +584,7 @@ function Room({
                               team: (e.target.value || null) as TeamId | null,
                             })
                           }
-                          className="min-w-0 shrink rounded-md border border-line bg-paper px-1.5 py-1 text-xs text-ink focus:outline-none focus:border-go"
+                          className="field min-w-0 shrink px-1.5 py-1 text-xs"
                         >
                           <option value="">{t('room.teamSolo')}</option>
                           {TEAMS.map((tm) => (
@@ -614,7 +606,7 @@ function Room({
                       <button
                         type="button"
                         onClick={() => send({ type: 'removeBot', id: p.id })}
-                        className="shrink-0 rounded-md border border-line px-2 py-1 text-xs font-medium text-ink-muted active:scale-95 transition"
+                        className="btn-ghost"
                       >
                         {t('room.removeBot')}
                       </button>
@@ -648,7 +640,7 @@ function Room({
                           <button
                             type="button"
                             onClick={startEditing}
-                            className="shrink-0 rounded-md border border-line px-2 py-1 text-xs font-medium text-ink-muted active:scale-95 transition"
+                            className="btn-ghost"
                           >
                             {t('room.rename')}
                           </button>
@@ -676,7 +668,7 @@ function Room({
                 team: (e.target.value || null) as TeamId | null,
               })
             }
-            className="w-full rounded-xl border border-line bg-paper px-4 py-3 text-base text-ink focus:outline-none focus:border-ink-muted"
+            className="field text-base"
           >
             <option value="">{t('room.teamSolo')}</option>
             {TEAMS.map((tm) => (
@@ -694,7 +686,7 @@ function Room({
           onClick={() =>
             send({ type: 'addBot', name: generateBotName(), team: null })
           }
-          className="w-full rounded-full border border-dashed border-line bg-paper px-6 py-2.5 text-sm font-semibold text-ink-muted active:scale-95 transition"
+          className="btn btn-secondary w-full border-dashed text-ink-muted"
         >
           {t('room.addBot')}
         </button>
@@ -704,8 +696,8 @@ function Room({
         type="button"
         disabled={motionUnsupported || me?.noMotion}
         onClick={() => onToggleReady(!(me?.ready ?? false))}
-        className={`w-full rounded-full px-6 py-4 text-lg font-semibold text-paper shadow-lg active:scale-95 transition disabled:bg-line disabled:text-ink-faint disabled:shadow-none ${
-          me?.ready ? 'bg-go shadow-go/25' : 'bg-eliminated shadow-eliminated/25'
+        className={`btn w-full px-6 py-4 text-lg text-paper shadow-soft disabled:bg-line disabled:text-ink-faint disabled:shadow-none ${
+          me?.ready ? 'bg-go' : 'bg-eliminated'
         }`}
       >
         {t(me?.ready ? 'room.readyDone' : 'room.readyPrompt')}
@@ -719,7 +711,7 @@ function Room({
         type="button"
         disabled={!allReady || !enoughSides}
         onClick={() => send({ type: 'start' })}
-        className="w-full rounded-full bg-go px-6 py-3 text-base font-semibold text-paper shadow-lg shadow-go/20 active:scale-95 transition disabled:bg-line disabled:text-ink-faint disabled:shadow-none"
+        className="btn btn-primary w-full"
       >
         {t(
           !allReady
@@ -735,7 +727,7 @@ function Room({
       <button
         type="button"
         onClick={onLeave}
-        className="w-full rounded-full bg-line px-6 py-3 text-sm font-semibold text-ink active:scale-95 transition"
+        className="btn btn-neutral w-full"
       >
         {t('room.leave')}
       </button>

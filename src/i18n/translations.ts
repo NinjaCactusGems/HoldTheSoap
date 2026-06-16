@@ -13,7 +13,7 @@ export const en = {
 
   'lobby.create': 'Create group',
   'lobby.or': 'or',
-  'lobby.codePlaceholder': 'GROUP CODE',
+  'lobby.codePlaceholder': 'Group code',
   'lobby.join': 'Join',
 
   'room.group': 'Group',
@@ -90,7 +90,7 @@ export const de: Record<TranslationKey, string> = {
 
   'lobby.create': 'Gruppe erstellen',
   'lobby.or': 'oder',
-  'lobby.codePlaceholder': 'GRUPPENCODE',
+  'lobby.codePlaceholder': 'Gruppencode',
   'lobby.join': 'Beitreten',
 
   'room.group': 'Gruppe',
@@ -167,7 +167,7 @@ export const es: Record<TranslationKey, string> = {
 
   'lobby.create': 'Crear grupo',
   'lobby.or': 'o',
-  'lobby.codePlaceholder': 'CÓDIGO DEL GRUPO',
+  'lobby.codePlaceholder': 'Código del grupo',
   'lobby.join': 'Unirse',
 
   'room.group': 'Grupo',
@@ -244,7 +244,7 @@ export const pt: Record<TranslationKey, string> = {
 
   'lobby.create': 'Criar grupo',
   'lobby.or': 'ou',
-  'lobby.codePlaceholder': 'CÓDIGO DO GRUPO',
+  'lobby.codePlaceholder': 'Código do grupo',
   'lobby.join': 'Entrar',
 
   'room.group': 'Grupo',
@@ -321,7 +321,7 @@ export const fr: Record<TranslationKey, string> = {
 
   'lobby.create': 'Créer un groupe',
   'lobby.or': 'ou',
-  'lobby.codePlaceholder': 'CODE DU GROUPE',
+  'lobby.codePlaceholder': 'Code du groupe',
   'lobby.join': 'Rejoindre',
 
   'room.group': 'Groupe',

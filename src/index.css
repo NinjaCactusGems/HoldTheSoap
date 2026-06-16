@@ -22,12 +22,60 @@
   --color-olive:      #F86FB1; /* legacy token, repointed to pink (unused) */
 
   /* brand + full-screen hold-phase fields — readable across a room */
-  --color-pink:    #F86FB1; /* title text + alive "HOLD" background */
-  --color-hold:    #F86FB1; /* in-game alive background */
+  --color-pink:    #EE7CAE; /* title text — softened rose, sits in the pastel family */
+  --color-hold:    #F86FB1; /* in-game alive background (kept punchy on its own screen) */
   --color-dropped: #A6D8F7; /* in-game eliminated background (light blue) */
 
-  --font-round: "Fredoka", ui-rounded, "Segoe UI Rounded", "Hiragino Maru Gothic ProN", system-ui, sans-serif;
+  /* Fredoka is the default UI font, so the whole app shares the playful
+     rounded voice of the title (no per-element font-round needed). --font-round
+     stays as an explicit alias for places that want to spell the intent out. */
+  --font-sans:  "Fredoka", ui-rounded, "Segoe UI Rounded", "Hiragino Maru Gothic ProN", system-ui, sans-serif;
+  --font-round: var(--font-sans);
   --font-serif: ui-serif, Georgia, "Times New Roman", Cambria, serif;
+}
+
+/* ── Design system ────────────────────────────────────────────────────────
+   One small, shared vocabulary so the UI reads as intentional. Scales:
+     • radii:    pill → rounded-full · surface → rounded-2xl · field → rounded-xl
+                 · small inline → rounded-lg
+     • padding:  primary px-6 py-3.5 · secondary px-5 py-2.5 · inline px-2.5 py-1
+     • press:    active:scale-95 everywhere
+     • shadow:   one gentle "floating" shadow-soft on primary CTAs / raised menus
+   ------------------------------------------------------------------------- */
+
+/* Gentle floating shadow — replaces the heavy/harsh shadow-lg drops. */
+@utility shadow-soft {
+  box-shadow: 0 10px 30px -12px rgb(36 55 67 / 0.18);
+}
+
+@layer components {
+  /* Buttons */
+  .btn {
+    @apply rounded-full font-semibold transition active:scale-95 disabled:cursor-not-allowed;
+  }
+  .btn-primary {
+    @apply px-6 py-3.5 text-base bg-go text-paper shadow-soft disabled:bg-line disabled:text-ink-faint disabled:shadow-none;
+  }
+  .btn-secondary {
+    @apply px-5 py-2.5 text-sm border border-line bg-paper text-ink;
+  }
+  .btn-neutral {
+    @apply px-5 py-2.5 text-sm bg-line text-ink;
+  }
+  .btn-ghost {
+    @apply shrink-0 rounded-lg border border-line px-2.5 py-1 text-xs font-medium text-ink-muted transition active:scale-95;
+  }
+
+  /* Form fields — a faint sky fill makes them legible against white cards, and
+     every field shares one focus treatment. */
+  .field {
+    @apply w-full rounded-xl border border-line bg-sky/50 px-4 py-3 text-ink placeholder:text-ink-faint focus:outline-none focus:border-go focus:ring-2 focus:ring-go/20;
+  }
+
+  /* Raised white "window" surfaces (lobby panel, how-to-play, menus). */
+  .surface {
+    @apply rounded-2xl border border-line bg-paper-raised/80;
+  }
 }
 
 @layer utilities {

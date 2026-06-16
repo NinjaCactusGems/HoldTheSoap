@@ -17,7 +17,7 @@ export function HowToPlay() {
         aria-expanded={open}
         aria-controls={panelId}
         onClick={() => setOpen((v) => !v)}
-        className="w-full flex items-center gap-3 rounded-2xl border border-line bg-paper-raised/80 px-5 py-3 text-left active:scale-[0.99] transition"
+        className="surface w-full flex items-center gap-3 px-5 py-3 text-left active:scale-95 transition"
       >
         <span
           aria-hidden="true"
@@ -41,7 +41,7 @@ export function HowToPlay() {
       <div
         id={panelId}
         hidden={!open}
-        className="mt-2 rounded-2xl border border-line bg-paper-raised/80 px-5 py-4 text-sm leading-relaxed text-ink"
+        className="surface mt-2 px-5 py-4 text-sm leading-relaxed text-ink"
       >
         <p className="text-ink-muted">{t('howToPlay.intro')}</p>
         <ol className="mt-3 flex flex-col gap-3.5">
