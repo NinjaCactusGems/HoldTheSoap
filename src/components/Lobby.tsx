@@ -491,25 +491,56 @@ function Room({
   }
 
   const lobbyPanel = (
-    <div className="surface w-full max-w-sm p-6 flex flex-col gap-5">
-      <div className="flex items-baseline justify-between">
-        <h2 className="text-sm font-semibold uppercase tracking-wider text-ink-muted">
-          {t('room.group')}
-        </h2>
-        <StatusBadge status={status} />
-      </div>
+    <div className="surface relative w-full max-w-sm p-6 flex flex-col gap-5">
+      {status !== 'open' && <ConnectionSwirl status={status} />}
 
-      <div className="text-center font-serif text-4xl tracking-[0.4em] text-ink">
-        {code}
+      <div className="flex items-center justify-center gap-2 pl-[0.2em]">
+        <span className="font-round text-3xl font-bold tracking-[0.2em] text-ink">
+          {code}
+        </span>
+        <button
+          type="button"
+          onClick={copy}
+          aria-label={t(copied ? 'room.linkCopied' : 'room.copyLink')}
+          className="btn-ghost grid h-9 w-9 place-items-center p-0"
+        >
+          {copied ? (
+            <svg
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth={2}
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              className="h-4 w-4 text-go"
+              aria-hidden
+            >
+              <path d="m5 13 4 4L19 7" />
+            </svg>
+          ) : (
+            <svg
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth={2}
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              className="h-4 w-4"
+              aria-hidden
+            >
+              {/* share: arrow rising out of a tray */}
+              <path d="M12 16V4" />
+              <path d="m8 8 4-4 4 4" />
+              <path d="M5 12v6a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-6" />
+            </svg>
+          )}
+        </button>
       </div>
 
       <div className="flex flex-col items-center gap-3">
         <div className="rounded-xl bg-paper-raised p-3">
           <QRCodeSVG value={shareUrl} size={140} bgColor="#FFFFFF" fgColor="#243743" />
         </div>
-        <button type="button" onClick={copy} className="btn btn-secondary w-full">
-          {t(copied ? 'room.linkCopied' : 'room.copyLink')}
-        </button>
       </div>
 
       <div className="flex flex-col gap-2">
@@ -531,7 +562,7 @@ function Room({
                   key={p.id}
                   className={`flex items-center gap-2 rounded-xl px-2.5 py-2 text-sm ${
                     isMe
-                      ? 'bg-go/10 ring-1 ring-go/40'
+                      ? 'bg-go/15 ring-1 ring-go/50'
                       : 'bg-paper'
                   } ${p.away ? 'opacity-50' : ''}`}
                 >
@@ -614,13 +645,36 @@ function Room({
                   ) : (
                     <>
                       <NameWithSoaps name={p.name} wins={p.wins} />
-                      {team && (
-                        <span
-                          className="shrink-0 rounded-full px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-paper"
-                          style={{ backgroundColor: team.color }}
-                        >
-                          {t(`team.${team.id}`)}
-                        </span>
+                      {isMe ? (
+                        players.length >= MIN_PLAYERS_FOR_TEAMS && (
+                          <select
+                            value={p.team ?? ''}
+                            onChange={(e) =>
+                              send({
+                                type: 'setTeam',
+                                team: (e.target.value || null) as TeamId | null,
+                              })
+                            }
+                            aria-label={t('room.team')}
+                            className="field min-w-0 shrink px-1.5 py-1 text-xs"
+                          >
+                            <option value="">{t('room.teamSolo')}</option>
+                            {TEAMS.map((tm) => (
+                              <option key={tm.id} value={tm.id}>
+                                {t(`team.${tm.id}`)}
+                              </option>
+                            ))}
+                          </select>
+                        )
+                      ) : (
+                        team && (
+                          <span
+                            className="shrink-0 rounded-full px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-paper"
+                            style={{ backgroundColor: team.color }}
+                          >
+                            {t(`team.${team.id}`)}
+                          </span>
+                        )
                       )}
                       {p.noMotion && (
                         <span className="shrink-0 rounded-full bg-line px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-ink-muted">
@@ -633,18 +687,26 @@ function Room({
                         </span>
                       )}
                       {isMe && (
-                        <>
-                          <span className="shrink-0 rounded-full bg-go/20 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-go">
-                            {t('room.you')}
-                          </span>
-                          <button
-                            type="button"
-                            onClick={startEditing}
-                            className="btn-ghost"
+                        <button
+                          type="button"
+                          onClick={startEditing}
+                          aria-label={t('room.rename')}
+                          className="btn-ghost grid h-7 w-7 place-items-center p-0"
+                        >
+                          <svg
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="currentColor"
+                            strokeWidth={2}
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            className="h-3.5 w-3.5"
+                            aria-hidden
                           >
-                            {t('room.rename')}
-                          </button>
-                        </>
+                            <path d="M12 20h9" />
+                            <path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z" />
+                          </svg>
+                        </button>
                       )}
                     </>
                   )}
@@ -654,31 +716,6 @@ function Room({
           </ul>
         )}
       </div>
-
-      {players.length >= MIN_PLAYERS_FOR_TEAMS && (
-        <label className="flex flex-col gap-1.5">
-          <span className="text-xs uppercase tracking-wider text-ink-muted">
-            {t('room.team')}
-          </span>
-          <select
-            value={me?.team ?? ''}
-            onChange={(e) =>
-              send({
-                type: 'setTeam',
-                team: (e.target.value || null) as TeamId | null,
-              })
-            }
-            className="field text-base"
-          >
-            <option value="">{t('room.teamSolo')}</option>
-            {TEAMS.map((tm) => (
-              <option key={tm.id} value={tm.id}>
-                {t(`team.${tm.id}`)}
-              </option>
-            ))}
-          </select>
-        </label>
-      )}
 
       {testing && (
         <button
@@ -760,35 +797,20 @@ function Room({
   return lobbyPanel;
 }
 
-function StatusBadge({ status }: { status: 'connecting' | 'open' | 'closed' }) {
+// Connection indicator: a small spinning swirl in the panel's top-right, shown
+// only while connecting or offline (a healthy connection shows nothing). Ochre
+// while connecting, accent-red once the socket has dropped.
+function ConnectionSwirl({ status }: { status: 'connecting' | 'closed' }) {
   const { t } = useI18n();
-  const styles =
-    status === 'open'
-      ? 'bg-go/15 text-go border-go/40'
-      : status === 'connecting'
-        ? 'bg-ochre/15 text-ochre border-ochre/40'
-        : 'bg-accent/15 text-accent border-accent/40';
-  const label = t(
-    status === 'open'
-      ? 'status.connected'
-      : status === 'connecting'
-        ? 'status.connecting'
-        : 'status.offline',
-  );
   return (
     <span
-      className={`inline-flex items-center gap-1.5 rounded-full border px-2 py-0.5 text-[10px] font-medium uppercase tracking-wider ${styles}`}
-    >
-      <span
-        className={`h-1.5 w-1.5 rounded-full ${
-          status === 'open'
-            ? 'bg-go animate-pulse'
-            : status === 'connecting'
-              ? 'bg-ochre animate-pulse'
-              : 'bg-accent'
-        }`}
-      />
-      {label}
-    </span>
+      role="status"
+      aria-label={t(
+        status === 'connecting' ? 'status.connecting' : 'status.offline',
+      )}
+      className={`absolute right-3 top-3 h-4 w-4 animate-spin rounded-full border-2 border-line ${
+        status === 'connecting' ? 'border-t-ochre' : 'border-t-accent'
+      }`}
+    />
   );
 }

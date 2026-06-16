@@ -159,11 +159,11 @@ function ReadyView({
         {t('game.getReady')}
       </div>
       {secondsLeft > 0 ? (
-        <div className="font-serif text-9xl font-bold tabular-nums">
+        <div className="font-round text-9xl font-bold tabular-nums">
           {secondsLeft}
         </div>
       ) : (
-        <div className="font-serif text-8xl font-bold tracking-tight text-go">
+        <div className="font-round text-8xl font-bold tracking-tight text-go">
           {t('game.go')}
         </div>
       )}
@@ -357,13 +357,13 @@ function WinnerView({
       </div>
       {winningTeam ? (
         <div
-          className="font-serif text-5xl font-bold tracking-tight text-center px-6"
+          className="font-round text-5xl font-bold tracking-tight text-center px-6"
           style={{ color: winningTeam.color }}
         >
           {t('game.teamWins', { team: t(`team.${winningTeam.id}`) })}
         </div>
       ) : (
-        <div className="font-serif text-5xl font-bold tracking-tight text-center px-6">
+        <div className="font-round text-5xl font-bold tracking-tight text-center px-6">
           {winner?.name ?? t('game.noOne')}
         </div>
       )}

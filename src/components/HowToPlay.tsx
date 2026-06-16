@@ -21,7 +21,7 @@ export function HowToPlay() {
       >
         <span
           aria-hidden="true"
-          className="grid h-7 w-7 shrink-0 place-items-center rounded-full bg-ink text-paper font-serif font-bold"
+          className="grid h-7 w-7 shrink-0 place-items-center rounded-full bg-ink text-paper font-round font-bold"
         >
           ?
         </span>
@@ -49,7 +49,7 @@ export function HowToPlay() {
             const n = (i + 1) as 1 | 2 | 3 | 4;
             return (
               <li key={n} className="flex gap-2.5">
-                <span className="font-serif font-bold text-accent">{n}.</span>
+                <span className="font-round font-bold text-accent">{n}.</span>
                 <span className="flex min-w-0 flex-1 flex-col gap-1.5">
                   <span>{rule()}</span>
                   <BulletFigure n={n} />
