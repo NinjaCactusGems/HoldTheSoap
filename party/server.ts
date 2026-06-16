@@ -12,7 +12,6 @@ type TeamId =
   | 'sink'
   | 'bathtub'
   | 'toilet'
-  | 'basin'
   | 'bidet'
   | 'kitchen'
   | 'hottub';
@@ -171,7 +170,6 @@ const TEAM_IDS: readonly TeamId[] = [
   'sink',
   'bathtub',
   'toilet',
-  'basin',
   'bidet',
   'kitchen',
   'hottub',

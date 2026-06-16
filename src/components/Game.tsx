@@ -356,10 +356,7 @@ function WinnerView({
         {t(iWon ? 'game.youWin' : 'game.winner')}
       </div>
       {winningTeam ? (
-        <div
-          className="font-round text-5xl font-bold tracking-tight text-center px-6"
-          style={{ color: winningTeam.color }}
-        >
+        <div className="font-round text-5xl font-bold tracking-tight text-center px-6">
           {t('game.teamWins', { team: t(`team.${winningTeam.id}`) })}
         </div>
       ) : (
@@ -389,20 +386,18 @@ function WinnerView({
   );
 
   if (postGame) {
+    // The whole overlay scrolls as one page (like the initial lobby), rather
+    // than pinning the lobby into its own inner scroll area.
     return (
-      <div className="fixed inset-0 z-50 flex flex-col overflow-hidden bg-sky text-ink">
+      <div className="fixed inset-0 z-50 overflow-y-auto bg-sky text-ink">
         <ReactionParticles lastReaction={lastReaction} />
-        <div className="flex shrink-0 flex-col items-center gap-4 px-6 pt-10 pb-4">
+        <div className="mx-auto flex w-full max-w-md flex-col items-center gap-4 px-6 pt-10 pb-10">
           {/* Once the lobby has slid up, the winner banner fades away so the
               room can focus on getting the next match going (smileys stay). */}
           <div className="animate-winner-fade">{header}</div>
           {smileys}
           <CoffeeLink />
-        </div>
-        <div className="relative z-10 flex min-h-0 flex-1 items-end justify-center px-4 pb-4">
-          <div className="animate-sheet-up max-h-full w-full max-w-sm overflow-y-auto">
-            {lobbySheet}
-          </div>
+          <div className="animate-sheet-up w-full max-w-sm">{lobbySheet}</div>
         </div>
       </div>
     );

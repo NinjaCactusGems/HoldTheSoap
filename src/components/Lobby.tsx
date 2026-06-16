@@ -15,6 +15,11 @@ const PARTY_HOST = import.meta.env.VITE_PARTY_HOST || 'localhost:1999';
 
 const PLAYER_NAME_KEY = 'holdthesoap:playerName';
 
+// 1×1 transparent GIF, fed to QRCodeSVG's imageSettings with excavate:true to
+// carve a clean white square in the QR center for the share button to sit in.
+const TRANSPARENT_PIXEL =
+  'data:image/gif;base64,R0lGODlhAQABAAAAACH5BAEKAAEALAAAAAABAAEAAAICTAEAOw==';
+
 // The hold phase runs at the fixed Normal/medium threshold (7 m/s², per the
 // CLAUDE.md presets) for everyone, all round.
 const HOLD_THRESHOLD = 7;
@@ -596,9 +601,15 @@ function Room({
             level="H"
             bgColor="#FFFFFF"
             fgColor="#243743"
+            imageSettings={{
+              src: TRANSPARENT_PIXEL,
+              height: 42,
+              width: 42,
+              excavate: true,
+            }}
           />
           <span className="pointer-events-none absolute inset-0 grid place-items-center">
-            <span className="grid h-11 w-11 place-items-center rounded-full bg-go text-paper shadow-soft ring-2 ring-paper-raised">
+            <span className="grid h-10 w-10 place-items-center rounded-2xl bg-go text-paper shadow-soft">
               {copied ? (
                 <svg
                   viewBox="0 0 24 24"
@@ -632,16 +643,19 @@ function Room({
         </button>
       </div>
 
-      <button
-        type="button"
-        disabled={motionUnsupported || me?.noMotion}
-        onClick={() => onToggleReady(!(me?.ready ?? false))}
-        className={`btn w-full px-6 py-4 text-lg text-paper shadow-soft disabled:bg-line disabled:text-ink-faint disabled:shadow-none ${
-          me?.ready ? 'bg-go' : 'bg-eliminated'
-        }`}
-      >
-        {t(me?.ready ? 'room.readyDone' : 'room.readyPrompt')}
-      </button>
+      <div className="relative">
+        {enoughSides && <Sparkles />}
+        <button
+          type="button"
+          disabled={motionUnsupported || me?.noMotion}
+          onClick={() => onToggleReady(!(me?.ready ?? false))}
+          className={`btn relative z-10 w-full px-6 py-3.5 text-base text-paper shadow-soft disabled:bg-line disabled:text-ink-faint disabled:shadow-none ${
+            me?.ready ? 'bg-go' : 'bg-eliminated'
+          }`}
+        >
+          {t(me?.ready ? 'room.readyDone' : 'room.readyPrompt')}
+        </button>
+      </div>
 
       {motionUnsupported && (
         <p className="-mt-2 text-xs text-accent">{t('room.motionWarning')}</p>
@@ -742,10 +756,8 @@ function Room({
                         />
                       ) : (
                         team && (
-                          <span
-                            className="shrink-0 rounded-full px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-paper"
-                            style={{ backgroundColor: team.color }}
-                          >
+                          <span className="shrink-0 rounded-full bg-line px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-ink-muted">
+                            <span aria-hidden>{team.icon}</span>{' '}
                             {t(`team.${team.id}`)}
                           </span>
                         )
@@ -770,10 +782,8 @@ function Room({
                         )
                       ) : (
                         team && (
-                          <span
-                            className="shrink-0 rounded-full px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-paper"
-                            style={{ backgroundColor: team.color }}
-                          >
+                          <span className="shrink-0 rounded-full bg-line px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-ink-muted">
+                            <span aria-hidden>{team.icon}</span>{' '}
                             {t(`team.${team.id}`)}
                           </span>
                         )
@@ -847,6 +857,52 @@ function Room({
   return lobbyPanel;
 }
 
+// Decorative glitter around the ready button while a match is startable. Each
+// sparkle is a small dot that twinkles on a staggered delay (animate-glitter).
+type Spark = {
+  top?: string;
+  bottom?: string;
+  left?: string;
+  right?: string;
+  size: number;
+  delay: string;
+  color: string;
+};
+
+const SPARKS: Spark[] = [
+  { top: '-7px', left: '8%', size: 6, delay: '0s', color: 'bg-go' },
+  { top: '-11px', left: '34%', size: 4, delay: '0.5s', color: 'bg-accent' },
+  { top: '-5px', left: '62%', size: 5, delay: '0.9s', color: 'bg-ochre' },
+  { top: '-9px', left: '88%', size: 5, delay: '0.2s', color: 'bg-accent' },
+  { bottom: '-7px', left: '14%', size: 5, delay: '0.7s', color: 'bg-ochre' },
+  { bottom: '-10px', left: '46%', size: 4, delay: '1.1s', color: 'bg-go' },
+  { bottom: '-5px', left: '76%', size: 6, delay: '0.35s', color: 'bg-accent' },
+  { top: '38%', left: '-6px', size: 4, delay: '0.6s', color: 'bg-go' },
+  { top: '38%', right: '-6px', size: 4, delay: '1.0s', color: 'bg-ochre' },
+];
+
+function Sparkles() {
+  return (
+    <div aria-hidden className="pointer-events-none absolute -inset-2 z-0">
+      {SPARKS.map((s, i) => (
+        <span
+          key={i}
+          className={`animate-glitter absolute rounded-full ${s.color}`}
+          style={{
+            top: s.top,
+            bottom: s.bottom,
+            left: s.left,
+            right: s.right,
+            width: s.size,
+            height: s.size,
+            animationDelay: s.delay,
+          }}
+        />
+      ))}
+    </div>
+  );
+}
+
 // Connection indicator: a small spinning swirl in the panel's top-left, shown
 // only while connecting or offline (a healthy connection shows nothing). Ochre
 // while connecting, accent-red once the socket has dropped. Sits opposite the
@@ -905,14 +961,9 @@ function TeamPicker({
         aria-expanded={open}
         aria-label={t('room.team')}
         onClick={() => setOpen((o) => !o)}
-        className={`flex items-center gap-1 rounded-full border px-2 py-1 text-sm transition active:scale-95 ${
-          current
-            ? 'border-transparent text-paper'
-            : 'border-line bg-paper text-ink-muted'
-        }`}
-        style={current ? { backgroundColor: current.color } : undefined}
+        className="flex items-center gap-1 rounded-full border border-line bg-paper px-2 py-1 text-sm text-ink-muted transition active:scale-95"
       >
-        <span aria-hidden>{current ? current.icon : '🧼'}</span>
+        <span aria-hidden>{current ? current.icon : '–'}</span>
         <span aria-hidden className="text-[10px] opacity-80">
           ▾
         </span>
@@ -936,7 +987,7 @@ function TeamPicker({
               value === null ? 'bg-ink text-paper' : 'text-ink-muted'
             }`}
           >
-            <span aria-hidden>🧼</span>
+            <span aria-hidden>✋</span>
             {t('room.teamSolo')}
           </button>
           {TEAMS.map((tm) => (
@@ -950,9 +1001,8 @@ function TeamPicker({
                 setOpen(false);
               }}
               className={`flex w-full items-center gap-2 rounded-xl px-3 py-1.5 text-left text-sm font-semibold transition ${
-                value === tm.id ? 'text-paper' : 'text-ink'
+                value === tm.id ? 'bg-ink text-paper' : 'text-ink'
               }`}
-              style={value === tm.id ? { backgroundColor: tm.color } : undefined}
             >
               <span aria-hidden>{tm.icon}</span>
               {t(`team.${tm.id}`)}
