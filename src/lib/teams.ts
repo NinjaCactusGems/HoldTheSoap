@@ -21,19 +21,21 @@ export type TeamId =
 export type Team = {
   id: TeamId;
   color: string;
+  // Emoji glyph shown in the compact team picker pill and its menu.
+  icon: string;
 };
 
 // Display names live in the i18n dictionary as `team.<id>` keys; render them
 // via t(`team.${id}`).
 export const TEAMS: Team[] = [
-  { id: 'shower', color: '#C97BA0' }, // soft rose pink
-  { id: 'sink', color: '#B8895A' }, // warm sand
-  { id: 'bathtub', color: '#7E6B4A' }, // bronze clay
-  { id: 'toilet', color: '#C9A227' }, // dusty gold
-  { id: 'basin', color: '#C56A2E' }, // russet orange
-  { id: 'bidet', color: '#5C6B8A' }, // slate blue
-  { id: 'kitchen', color: '#6E4F3A' }, // tawny brown
-  { id: 'hottub', color: '#3F7A78' }, // deep teal
+  { id: 'shower', color: '#C97BA0', icon: '🚿' }, // soft rose pink
+  { id: 'sink', color: '#B8895A', icon: '🚰' }, // warm sand
+  { id: 'bathtub', color: '#7E6B4A', icon: '🛁' }, // bronze clay
+  { id: 'toilet', color: '#C9A227', icon: '🚽' }, // dusty gold
+  { id: 'basin', color: '#C56A2E', icon: '🪣' }, // russet orange
+  { id: 'bidet', color: '#5C6B8A', icon: '💦' }, // slate blue
+  { id: 'kitchen', color: '#6E4F3A', icon: '🧽' }, // tawny brown
+  { id: 'hottub', color: '#3F7A78', icon: '♨️' }, // deep teal
 ];
 
 export const TEAM_IDS: TeamId[] = TEAMS.map((t) => t.id);

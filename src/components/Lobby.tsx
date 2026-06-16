@@ -218,6 +218,7 @@ function Room({
   const [copied, setCopied] = useState(false);
   const [editing, setEditing] = useState(false);
   const [draftName, setDraftName] = useState('');
+  const [confirmingLeave, setConfirmingLeave] = useState(false);
 
   // One motion session for the whole room, started on the "I'm ready" gesture
   // (iOS requires the permission request to come from a user gesture). The
@@ -448,6 +449,20 @@ function Room({
     }
   };
 
+  // Tapping the QR shares the room. Prefer the OS share sheet where available
+  // (mobile); fall back to copying the link (desktop), reusing the copied cue.
+  const share = async () => {
+    if (typeof navigator !== 'undefined' && typeof navigator.share === 'function') {
+      try {
+        await navigator.share({ title: 'Hold the Soap', text: 'Hold the Soap', url: shareUrl });
+      } catch {
+        // User dismissed the sheet, or share failed — nothing to do.
+      }
+      return;
+    }
+    void copy();
+  };
+
   const startEditing = () => {
     setDraftName(me?.name ?? myName.current);
     setEditing(true);
@@ -490,58 +505,170 @@ function Room({
     );
   }
 
+  const canStart = allReady && enoughSides;
+  const requirementKey = canStart
+    ? 'room.starting'
+    : !allReady
+      ? 'room.waitingEveryone'
+      : activePlayers.length <= 1
+        ? 'room.needPlayers'
+        : 'room.needTeams';
+
   const lobbyPanel = (
     <div className="surface relative w-full max-w-sm p-6 flex flex-col gap-5">
       {status !== 'open' && <ConnectionSwirl status={status} />}
 
-      <div className="flex items-center justify-center gap-2 pl-[0.2em]">
+      {/* Leave: a small X top-right that asks to confirm before exiting. */}
+      <div className="absolute right-3 top-3 z-20">
+        <button
+          type="button"
+          onClick={() => setConfirmingLeave(true)}
+          aria-label={t('room.leave')}
+          className="btn-ghost grid h-8 w-8 place-items-center p-0"
+        >
+          <svg
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth={2}
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            className="h-4 w-4"
+            aria-hidden
+          >
+            <path d="M18 6 6 18" />
+            <path d="m6 6 12 12" />
+          </svg>
+        </button>
+        {confirmingLeave && (
+          <>
+            <div
+              className="fixed inset-0 z-20"
+              onClick={() => setConfirmingLeave(false)}
+            />
+            <div className="surface absolute right-0 top-10 z-30 w-48 p-3 shadow-soft flex flex-col gap-2.5">
+              <p className="text-sm font-semibold text-ink">
+                {t('room.leaveConfirm')}
+              </p>
+              <div className="flex gap-2">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setConfirmingLeave(false);
+                    onLeave();
+                  }}
+                  className="btn flex-1 bg-eliminated px-3 py-2 text-sm text-paper"
+                >
+                  {t('room.leave')}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setConfirmingLeave(false)}
+                  className="btn btn-neutral flex-1 px-3 py-2 text-sm"
+                >
+                  {t('room.cancel')}
+                </button>
+              </div>
+            </div>
+          </>
+        )}
+      </div>
+
+      <div className="flex justify-center pl-[0.2em]">
         <span className="font-round text-3xl font-bold tracking-[0.2em] text-ink">
           {code}
         </span>
+      </div>
+
+      {/* The QR is the share control: tap to open the OS share sheet (mobile)
+          or copy the link (desktop). A center arrow badge reads as tappable;
+          level="H" error correction keeps it scannable behind the overlay. */}
+      <div className="flex flex-col items-center gap-3">
         <button
           type="button"
-          onClick={copy}
-          aria-label={t(copied ? 'room.linkCopied' : 'room.copyLink')}
-          className="btn-ghost grid h-9 w-9 place-items-center p-0"
+          onClick={share}
+          aria-label={t(copied ? 'room.linkCopied' : 'room.share')}
+          className="relative rounded-xl bg-paper-raised p-3 active:scale-95 transition"
         >
-          {copied ? (
-            <svg
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth={2}
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              className="h-4 w-4 text-go"
-              aria-hidden
-            >
-              <path d="m5 13 4 4L19 7" />
-            </svg>
-          ) : (
-            <svg
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth={2}
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              className="h-4 w-4"
-              aria-hidden
-            >
-              {/* share: arrow rising out of a tray */}
-              <path d="M12 16V4" />
-              <path d="m8 8 4-4 4 4" />
-              <path d="M5 12v6a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-6" />
-            </svg>
-          )}
+          <QRCodeSVG
+            value={shareUrl}
+            size={140}
+            level="H"
+            bgColor="#FFFFFF"
+            fgColor="#243743"
+          />
+          <span className="pointer-events-none absolute inset-0 grid place-items-center">
+            <span className="grid h-11 w-11 place-items-center rounded-full bg-go text-paper shadow-soft ring-2 ring-paper-raised">
+              {copied ? (
+                <svg
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth={2.5}
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  className="h-5 w-5"
+                  aria-hidden
+                >
+                  <path d="m5 13 4 4L19 7" />
+                </svg>
+              ) : (
+                <svg
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth={2.5}
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  className="h-5 w-5"
+                  aria-hidden
+                >
+                  <path d="M5 12h14" />
+                  <path d="m13 6 6 6-6 6" />
+                </svg>
+              )}
+            </span>
+          </span>
         </button>
       </div>
 
-      <div className="flex flex-col items-center gap-3">
-        <div className="rounded-xl bg-paper-raised p-3">
-          <QRCodeSVG value={shareUrl} size={140} bgColor="#FFFFFF" fgColor="#243743" />
-        </div>
+      <button
+        type="button"
+        disabled={motionUnsupported || me?.noMotion}
+        onClick={() => onToggleReady(!(me?.ready ?? false))}
+        className={`btn w-full px-6 py-4 text-lg text-paper shadow-soft disabled:bg-line disabled:text-ink-faint disabled:shadow-none ${
+          me?.ready ? 'bg-go' : 'bg-eliminated'
+        }`}
+      >
+        {t(me?.ready ? 'room.readyDone' : 'room.readyPrompt')}
+      </button>
+
+      {motionUnsupported && (
+        <p className="-mt-2 text-xs text-accent">{t('room.motionWarning')}</p>
+      )}
+
+      {/* No manual start: the server auto-starts the instant the room is
+          eligible. Until then this pill shows what's still blocking it. */}
+      <div
+        role="status"
+        className={`w-full rounded-full px-6 py-3.5 text-center text-base font-semibold ${
+          canStart ? 'bg-go/15 text-go' : 'bg-line text-ink-faint'
+        }`}
+      >
+        {t(requirementKey)}
       </div>
+
+      {testing && (
+        <button
+          type="button"
+          onClick={() =>
+            send({ type: 'addBot', name: generateBotName(), team: null })
+          }
+          className="btn btn-secondary w-full border-dashed text-ink-muted"
+        >
+          {t('room.addBot')}
+        </button>
+      )}
 
       <div className="flex flex-col gap-2">
         <div className="text-xs uppercase tracking-wider text-ink-muted">
@@ -557,6 +684,7 @@ function Room({
               const isMe = p.id === myId;
               const isBot = p.id.startsWith('bot-');
               const team = teamById(p.team);
+              const teamsUnlocked = players.length >= MIN_PLAYERS_FOR_TEAMS;
               return (
                 <li
                   key={p.id}
@@ -605,25 +733,13 @@ function Room({
                   ) : isBot && testing ? (
                     <>
                       <NameWithSoaps name={p.name} wins={p.wins} />
-                      {players.length >= MIN_PLAYERS_FOR_TEAMS ? (
-                        <select
-                          value={p.team ?? ''}
-                          onChange={(e) =>
-                            send({
-                              type: 'setBotTeam',
-                              id: p.id,
-                              team: (e.target.value || null) as TeamId | null,
-                            })
+                      {teamsUnlocked ? (
+                        <TeamPicker
+                          value={p.team}
+                          onChange={(team) =>
+                            send({ type: 'setBotTeam', id: p.id, team })
                           }
-                          className="field min-w-0 shrink px-1.5 py-1 text-xs"
-                        >
-                          <option value="">{t('room.teamSolo')}</option>
-                          {TEAMS.map((tm) => (
-                            <option key={tm.id} value={tm.id}>
-                              {t(`team.${tm.id}`)}
-                            </option>
-                          ))}
-                        </select>
+                        />
                       ) : (
                         team && (
                           <span
@@ -646,25 +762,11 @@ function Room({
                     <>
                       <NameWithSoaps name={p.name} wins={p.wins} />
                       {isMe ? (
-                        players.length >= MIN_PLAYERS_FOR_TEAMS && (
-                          <select
-                            value={p.team ?? ''}
-                            onChange={(e) =>
-                              send({
-                                type: 'setTeam',
-                                team: (e.target.value || null) as TeamId | null,
-                              })
-                            }
-                            aria-label={t('room.team')}
-                            className="field min-w-0 shrink px-1.5 py-1 text-xs"
-                          >
-                            <option value="">{t('room.teamSolo')}</option>
-                            {TEAMS.map((tm) => (
-                              <option key={tm.id} value={tm.id}>
-                                {t(`team.${tm.id}`)}
-                              </option>
-                            ))}
-                          </select>
+                        teamsUnlocked && (
+                          <TeamPicker
+                            value={p.team}
+                            onChange={(team) => send({ type: 'setTeam', team })}
+                          />
                         )
                       ) : (
                         team && (
@@ -716,58 +818,6 @@ function Room({
           </ul>
         )}
       </div>
-
-      {testing && (
-        <button
-          type="button"
-          onClick={() =>
-            send({ type: 'addBot', name: generateBotName(), team: null })
-          }
-          className="btn btn-secondary w-full border-dashed text-ink-muted"
-        >
-          {t('room.addBot')}
-        </button>
-      )}
-
-      <button
-        type="button"
-        disabled={motionUnsupported || me?.noMotion}
-        onClick={() => onToggleReady(!(me?.ready ?? false))}
-        className={`btn w-full px-6 py-4 text-lg text-paper shadow-soft disabled:bg-line disabled:text-ink-faint disabled:shadow-none ${
-          me?.ready ? 'bg-go' : 'bg-eliminated'
-        }`}
-      >
-        {t(me?.ready ? 'room.readyDone' : 'room.readyPrompt')}
-      </button>
-
-      {motionUnsupported && (
-        <p className="-mt-2 text-xs text-accent">{t('room.motionWarning')}</p>
-      )}
-
-      <button
-        type="button"
-        disabled={!allReady || !enoughSides}
-        onClick={() => send({ type: 'start' })}
-        className="btn btn-primary w-full"
-      >
-        {t(
-          !allReady
-            ? 'room.waitingEveryone'
-            : !enoughSides
-              ? activePlayers.length <= 1
-                ? 'room.needPlayers'
-                : 'room.needTeams'
-              : 'room.startMatch',
-        )}
-      </button>
-
-      <button
-        type="button"
-        onClick={onLeave}
-        className="btn btn-neutral w-full"
-      >
-        {t('room.leave')}
-      </button>
     </div>
   );
 
@@ -797,9 +847,10 @@ function Room({
   return lobbyPanel;
 }
 
-// Connection indicator: a small spinning swirl in the panel's top-right, shown
+// Connection indicator: a small spinning swirl in the panel's top-left, shown
 // only while connecting or offline (a healthy connection shows nothing). Ochre
-// while connecting, accent-red once the socket has dropped.
+// while connecting, accent-red once the socket has dropped. Sits opposite the
+// leave X so the two never overlap.
 function ConnectionSwirl({ status }: { status: 'connecting' | 'closed' }) {
   const { t } = useI18n();
   return (
@@ -808,9 +859,107 @@ function ConnectionSwirl({ status }: { status: 'connecting' | 'closed' }) {
       aria-label={t(
         status === 'connecting' ? 'status.connecting' : 'status.offline',
       )}
-      className={`absolute right-3 top-3 h-4 w-4 animate-spin rounded-full border-2 border-line ${
+      className={`absolute left-3 top-3 h-4 w-4 animate-spin rounded-full border-2 border-line ${
         status === 'connecting' ? 'border-t-ochre' : 'border-t-accent'
       }`}
     />
+  );
+}
+
+// Compact team selector: a small pill showing the chosen team's icon + a caret,
+// opening a menu of icon + full-name options. Mirrors LanguageSwitcher's
+// open / outside-click / Escape handling.
+function TeamPicker({
+  value,
+  onChange,
+}: {
+  value: TeamId | null;
+  onChange: (team: TeamId | null) => void;
+}) {
+  const { t } = useI18n();
+  const [open, setOpen] = useState(false);
+  const rootRef = useRef<HTMLDivElement>(null);
+  const current = teamById(value);
+
+  useEffect(() => {
+    if (!open) return;
+    const onPointerDown = (e: PointerEvent) => {
+      if (!rootRef.current?.contains(e.target as Node)) setOpen(false);
+    };
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setOpen(false);
+    };
+    window.addEventListener('pointerdown', onPointerDown);
+    window.addEventListener('keydown', onKeyDown);
+    return () => {
+      window.removeEventListener('pointerdown', onPointerDown);
+      window.removeEventListener('keydown', onKeyDown);
+    };
+  }, [open]);
+
+  return (
+    <div ref={rootRef} className="relative shrink-0">
+      <button
+        type="button"
+        aria-haspopup="menu"
+        aria-expanded={open}
+        aria-label={t('room.team')}
+        onClick={() => setOpen((o) => !o)}
+        className={`flex items-center gap-1 rounded-full border px-2 py-1 text-sm transition active:scale-95 ${
+          current
+            ? 'border-transparent text-paper'
+            : 'border-line bg-paper text-ink-muted'
+        }`}
+        style={current ? { backgroundColor: current.color } : undefined}
+      >
+        <span aria-hidden>{current ? current.icon : '🧼'}</span>
+        <span aria-hidden className="text-[10px] opacity-80">
+          ▾
+        </span>
+      </button>
+
+      {open && (
+        <div
+          role="menu"
+          aria-label={t('room.team')}
+          className="surface absolute right-0 top-9 z-50 max-h-60 min-w-40 overflow-y-auto bg-paper-raised p-1 shadow-soft"
+        >
+          <button
+            type="button"
+            role="menuitemradio"
+            aria-checked={value === null}
+            onClick={() => {
+              onChange(null);
+              setOpen(false);
+            }}
+            className={`flex w-full items-center gap-2 rounded-xl px-3 py-1.5 text-left text-sm font-semibold transition ${
+              value === null ? 'bg-ink text-paper' : 'text-ink-muted'
+            }`}
+          >
+            <span aria-hidden>🧼</span>
+            {t('room.teamSolo')}
+          </button>
+          {TEAMS.map((tm) => (
+            <button
+              key={tm.id}
+              type="button"
+              role="menuitemradio"
+              aria-checked={value === tm.id}
+              onClick={() => {
+                onChange(tm.id);
+                setOpen(false);
+              }}
+              className={`flex w-full items-center gap-2 rounded-xl px-3 py-1.5 text-left text-sm font-semibold transition ${
+                value === tm.id ? 'text-paper' : 'text-ink'
+              }`}
+              style={value === tm.id ? { backgroundColor: tm.color } : undefined}
+            >
+              <span aria-hidden>{tm.icon}</span>
+              {t(`team.${tm.id}`)}
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
   );
 }
