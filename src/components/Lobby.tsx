@@ -607,20 +607,23 @@ function Room({
                   <path d="m5 13 4 4L19 7" />
                 </svg>
               ) : (
-                /* Common "share / forward" arrow: a flat shaft curving up and
-                   to the right into the arrowhead. */
+                /* Classic "share" glyph: three hollow nodes joined by two
+                   edges (Feather/Lucide share-2). */
                 <svg
                   viewBox="0 0 24 24"
                   fill="none"
                   stroke="currentColor"
-                  strokeWidth={2.5}
+                  strokeWidth={2}
                   strokeLinecap="round"
                   strokeLinejoin="round"
                   className="h-5 w-5"
                   aria-hidden
                 >
-                  <path d="M4 17v-1a6 6 0 0 1 6-6h8" />
-                  <path d="m13 5 6 5-6 5" />
+                  <circle cx="18" cy="5" r="3" />
+                  <circle cx="6" cy="12" r="3" />
+                  <circle cx="18" cy="19" r="3" />
+                  <line x1="8.59" y1="13.51" x2="15.42" y2="17.49" />
+                  <line x1="15.41" y1="6.51" x2="8.59" y2="10.49" />
                 </svg>
               )}
             </span>

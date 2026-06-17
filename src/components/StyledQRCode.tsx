@@ -11,7 +11,10 @@ const TRANSPARENT_PIXEL =
 // Soft, rounded-dot QR for the room share button. qr-code-styling is imperative
 // (append/update against a DOM node), so we drive it from refs. The background
 // is transparent so the code sits flush on the panel with no surrounding white
-// square; level-H error correction keeps it scannable with the centre cleared.
+// square; dots are tinted the title pink (--color-pink). Level-H error
+// correction keeps it scannable with the centre cleared.
+const PINK = '#EE7CAE';
+
 export function StyledQRCode({ value, size = 176 }: { value: string; size?: number }) {
   const containerRef = useRef<HTMLDivElement>(null);
   const qrRef = useRef<QRCodeStyling | null>(null);
@@ -25,10 +28,10 @@ export function StyledQRCode({ value, size = 176 }: { value: string; size?: numb
       margin: 0,
       image: TRANSPARENT_PIXEL,
       qrOptions: { errorCorrectionLevel: 'H' },
-      dotsOptions: { color: '#243743', type: 'rounded' },
+      dotsOptions: { color: PINK, type: 'rounded' },
       backgroundOptions: { color: 'transparent' },
-      cornersSquareOptions: { color: '#243743', type: 'extra-rounded' },
-      cornersDotOptions: { color: '#243743', type: 'dot' },
+      cornersSquareOptions: { color: PINK, type: 'extra-rounded' },
+      cornersDotOptions: { color: PINK, type: 'dot' },
       imageOptions: { hideBackgroundDots: true, imageSize: 0.32, margin: 2 },
     });
     qrRef.current = qr;
