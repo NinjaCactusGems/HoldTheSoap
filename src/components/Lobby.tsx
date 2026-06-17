@@ -664,15 +664,17 @@ function Room({
       )}
 
       {/* No manual start: the server auto-starts the instant the room is
-          eligible. Until then this pill shows what's still blocking it. */}
-      <div
-        role="status"
-        className={`w-full rounded-full px-6 py-3.5 text-center text-base font-semibold ${
-          canStart ? 'bg-go/15 text-go' : 'bg-line text-ink-faint'
-        }`}
-      >
-        {t(requirementKey)}
-      </div>
+          eligible. Once you've readied up, a bold warning calls out whatever is
+          still blocking the start. */}
+      {me?.ready && !canStart && (
+        <p
+          role="status"
+          className="flex items-center justify-center gap-2 text-center text-base font-bold text-ink"
+        >
+          <span aria-hidden>⚠️</span>
+          {t(requirementKey)}
+        </p>
+      )}
 
       {testing && (
         <button
@@ -687,7 +689,7 @@ function Room({
       )}
 
       <div className="flex flex-col gap-2">
-        <div className="text-xs uppercase tracking-wider text-ink-muted">
+        <div className="text-center text-xs uppercase tracking-wider text-ink-muted">
           {t('room.players', { count: players.length })}
         </div>
         {players.length === 0 ? (
@@ -877,35 +879,35 @@ type Spark = {
 const BUBBLE_WHITE = 'bg-white/70 ring-1 ring-go/40';
 const BUBBLE_BLUE = 'bg-go/60 ring-1 ring-go/30';
 
+// Positions hug the button edge — a couple of px outside to a couple inside —
+// so the foam clings to the rim rather than floating away from it.
 const SPARKS: Spark[] = [
-  { top: '-8px', left: '4%', size: 7, delay: '0s', color: BUBBLE_WHITE },
-  { top: '-12px', left: '16%', size: 5, delay: '0.5s', color: BUBBLE_BLUE },
-  { top: '-6px', left: '27%', size: 9, delay: '0.9s', color: BUBBLE_WHITE },
-  { top: '-13px', left: '38%', size: 4, delay: '0.2s', color: BUBBLE_BLUE },
-  { top: '-7px', left: '49%', size: 6, delay: '1.3s', color: BUBBLE_WHITE },
-  { top: '-11px', left: '60%', size: 5, delay: '0.45s', color: BUBBLE_BLUE },
-  { top: '-6px', left: '71%', size: 8, delay: '0.75s', color: BUBBLE_WHITE },
-  { top: '-12px', left: '82%', size: 4, delay: '1.1s', color: BUBBLE_BLUE },
-  { top: '-7px', left: '93%', size: 6, delay: '0.3s', color: BUBBLE_WHITE },
-  { bottom: '-8px', left: '7%', size: 6, delay: '0.65s', color: BUBBLE_BLUE },
-  { bottom: '-12px', left: '20%', size: 4, delay: '1.2s', color: BUBBLE_WHITE },
-  { bottom: '-6px', left: '32%', size: 8, delay: '0.15s', color: BUBBLE_BLUE },
-  { bottom: '-11px', left: '44%', size: 5, delay: '0.85s', color: BUBBLE_WHITE },
-  { bottom: '-7px', left: '55%', size: 7, delay: '0.4s', color: BUBBLE_BLUE },
-  { bottom: '-12px', left: '67%', size: 4, delay: '1.0s', color: BUBBLE_WHITE },
-  { bottom: '-6px', left: '78%', size: 9, delay: '0.55s', color: BUBBLE_BLUE },
-  { bottom: '-10px', left: '90%', size: 5, delay: '0.25s', color: BUBBLE_WHITE },
-  { top: '20%', left: '-8px', size: 6, delay: '0.7s', color: BUBBLE_BLUE },
-  { top: '58%', left: '-10px', size: 4, delay: '1.15s', color: BUBBLE_WHITE },
-  { top: '38%', left: '-7px', size: 5, delay: '0.35s', color: BUBBLE_BLUE },
-  { top: '20%', right: '-8px', size: 6, delay: '0.95s', color: BUBBLE_WHITE },
-  { top: '58%', right: '-10px', size: 4, delay: '0.5s', color: BUBBLE_BLUE },
-  { top: '38%', right: '-7px', size: 5, delay: '1.25s', color: BUBBLE_WHITE },
+  { top: '-4px', left: '6%', size: 7, delay: '0s', color: BUBBLE_WHITE },
+  { top: '-6px', left: '18%', size: 5, delay: '0.5s', color: BUBBLE_BLUE },
+  { top: '2px', left: '29%', size: 8, delay: '0.9s', color: BUBBLE_WHITE },
+  { top: '-5px', left: '40%', size: 4, delay: '0.2s', color: BUBBLE_BLUE },
+  { top: '3px', left: '51%', size: 6, delay: '1.3s', color: BUBBLE_WHITE },
+  { top: '-5px', left: '62%', size: 5, delay: '0.45s', color: BUBBLE_BLUE },
+  { top: '2px', left: '73%', size: 7, delay: '0.75s', color: BUBBLE_WHITE },
+  { top: '-6px', left: '84%', size: 4, delay: '1.1s', color: BUBBLE_BLUE },
+  { top: '-4px', left: '94%', size: 6, delay: '0.3s', color: BUBBLE_WHITE },
+  { bottom: '-4px', left: '9%', size: 6, delay: '0.65s', color: BUBBLE_BLUE },
+  { bottom: '2px', left: '21%', size: 4, delay: '1.2s', color: BUBBLE_WHITE },
+  { bottom: '-5px', left: '33%', size: 8, delay: '0.15s', color: BUBBLE_BLUE },
+  { bottom: '3px', left: '45%', size: 5, delay: '0.85s', color: BUBBLE_WHITE },
+  { bottom: '-4px', left: '57%', size: 7, delay: '0.4s', color: BUBBLE_BLUE },
+  { bottom: '2px', left: '69%', size: 4, delay: '1.0s', color: BUBBLE_WHITE },
+  { bottom: '-5px', left: '80%', size: 8, delay: '0.55s', color: BUBBLE_BLUE },
+  { bottom: '-3px', left: '91%', size: 5, delay: '0.25s', color: BUBBLE_WHITE },
+  { top: '25%', left: '-3px', size: 6, delay: '0.7s', color: BUBBLE_BLUE },
+  { top: '60%', left: '2px', size: 4, delay: '1.15s', color: BUBBLE_WHITE },
+  { top: '25%', right: '-3px', size: 6, delay: '0.95s', color: BUBBLE_WHITE },
+  { top: '60%', right: '2px', size: 4, delay: '0.5s', color: BUBBLE_BLUE },
 ];
 
 function Sparkles() {
   return (
-    <div aria-hidden className="pointer-events-none absolute -inset-3 z-0">
+    <div aria-hidden className="pointer-events-none absolute -inset-1 z-20">
       {SPARKS.map((s, i) => (
         <span
           key={i}
@@ -995,7 +997,7 @@ function TeamPicker({
         <div
           role="menu"
           aria-label={t('room.team')}
-          className="surface absolute right-0 top-9 z-50 max-h-60 min-w-40 overflow-y-auto bg-paper-raised p-1 shadow-soft"
+          className="surface absolute bottom-full right-0 mb-1 z-50 max-h-60 min-w-40 overflow-y-auto bg-paper-raised p-1 shadow-soft"
         >
           <button
             type="button"
@@ -1009,7 +1011,7 @@ function TeamPicker({
               value === null ? 'bg-ink text-paper' : 'text-ink-muted'
             }`}
           >
-            <span aria-hidden>✋</span>
+            <span aria-hidden>👋</span>
             {t('room.teamSolo')}
           </button>
           {TEAMS.map((tm) => (

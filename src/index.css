@@ -140,17 +140,18 @@
     overflow: hidden;
   }
 
-  /* Ready button glitter: small sparkles twinkle in and out while a match is
-     actually startable, nudging the last "I'm ready" taps. */
+  /* Ready button foam: small blue/white bubbles twinkle in and out (and bob
+     gently, like foam) while a match is actually startable, nudging the last
+     "I'm ready" taps. */
   @keyframes glitter {
     0%,
     100% {
       opacity: 0;
-      transform: scale(0.3);
+      transform: translateY(3px) scale(0.3);
     }
     50% {
       opacity: 1;
-      transform: scale(1);
+      transform: translateY(-3px) scale(1);
     }
   }
   .animate-glitter {
