@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import usePartySocket from 'partysocket/react';
-import { QRCodeSVG } from 'qrcode.react';
+import { StyledQRCode } from './StyledQRCode';
 import { generateRoomCode, normalizeRoomCode } from '../lib/roomCode';
 import { generateRandomName, generateBotName } from '../lib/names';
 import { Game, type Phase, type Reaction } from './Game';
@@ -14,11 +14,6 @@ import { useI18n } from '../i18n/I18nContext';
 const PARTY_HOST = import.meta.env.VITE_PARTY_HOST || 'localhost:1999';
 
 const PLAYER_NAME_KEY = 'holdthesoap:playerName';
-
-// 1×1 transparent GIF, fed to QRCodeSVG's imageSettings with excavate:true to
-// carve a clean white square in the QR center for the share button to sit in.
-const TRANSPARENT_PIXEL =
-  'data:image/gif;base64,R0lGODlhAQABAAAAACH5BAEKAAEALAAAAAABAAEAAAICTAEAOw==';
 
 // The hold phase runs at the fixed Normal/medium threshold (7 m/s², per the
 // CLAUDE.md presets) for everyone, all round.
@@ -595,19 +590,7 @@ function Room({
           aria-label={t(copied ? 'room.linkCopied' : 'room.share')}
           className="relative rounded-xl bg-paper-raised p-3 active:scale-95 transition"
         >
-          <QRCodeSVG
-            value={shareUrl}
-            size={140}
-            level="H"
-            bgColor="#FFFFFF"
-            fgColor="#243743"
-            imageSettings={{
-              src: TRANSPARENT_PIXEL,
-              height: 42,
-              width: 42,
-              excavate: true,
-            }}
-          />
+          <StyledQRCode value={shareUrl} size={140} />
           <span className="pointer-events-none absolute inset-0 grid place-items-center">
             <span className="grid h-10 w-10 place-items-center rounded-2xl text-ink">
               {copied ? (
