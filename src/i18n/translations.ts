@@ -6,6 +6,7 @@
 export const en = {
   'app.title': 'HOLD THE SOAP',
   'app.language': 'Language',
+  'app.close': 'Close',
 
   'install.cta': 'Add to Home Screen',
   'install.iosTitle': 'Add to Home Screen',
@@ -94,6 +95,7 @@ export type TranslationKey = keyof typeof en;
 export const de: Record<TranslationKey, string> = {
   'app.title': 'HALTE DIE SEIFE',
   'app.language': 'Sprache',
+  'app.close': 'Schließen',
 
   'install.cta': 'Zum Startbildschirm',
   'install.iosTitle': 'Zum Startbildschirm hinzufügen',
@@ -182,6 +184,7 @@ export const de: Record<TranslationKey, string> = {
 export const es: Record<TranslationKey, string> = {
   'app.title': 'SUJETA EL JABÓN',
   'app.language': 'Idioma',
+  'app.close': 'Cerrar',
 
   'install.cta': 'Añadir a inicio',
   'install.iosTitle': 'Añadir a la pantalla de inicio',
@@ -270,6 +273,7 @@ export const es: Record<TranslationKey, string> = {
 export const pt: Record<TranslationKey, string> = {
   'app.title': 'SEGURA O SABONETE',
   'app.language': 'Idioma',
+  'app.close': 'Fechar',
 
   'install.cta': 'Adicionar à tela inicial',
   'install.iosTitle': 'Adicionar à tela de início',
@@ -358,6 +362,7 @@ export const pt: Record<TranslationKey, string> = {
 export const fr: Record<TranslationKey, string> = {
   'app.title': 'TIENS LE SAVON',
   'app.language': 'Langue',
+  'app.close': 'Fermer',
 
   'install.cta': 'Ajouter à l’écran d’accueil',
   'install.iosTitle': 'Ajouter à l’écran d’accueil',

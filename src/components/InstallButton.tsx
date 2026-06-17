@@ -40,17 +40,17 @@ export function InstallButton() {
   };
 
   return (
-    <div ref={rootRef} className="relative">
+    <div ref={rootRef} className="relative flex-1">
       <button
         type="button"
         onClick={onClick}
         aria-haspopup={isIos ? 'dialog' : undefined}
         aria-expanded={isIos ? showIosHelp : undefined}
-        className="flex items-center gap-1.5 rounded-full border border-line bg-paper-raised/80 px-3 py-1 text-xs font-semibold text-ink-muted transition active:scale-95"
+        className="surface flex h-full w-full items-center justify-center gap-2 px-3 py-3 text-center active:scale-95 transition"
       >
         <svg
           viewBox="0 0 24 24"
-          className="h-3.5 w-3.5"
+          className="h-5 w-5 shrink-0 text-ink-muted"
           fill="none"
           stroke="currentColor"
           strokeWidth="1.8"
@@ -62,14 +62,14 @@ export function InstallButton() {
           <rect x="6" y="2" width="12" height="20" rx="2.5" />
           <path d="M12 8v6m0 0-2.5-2.5M12 14l2.5-2.5" />
         </svg>
-        {t('install.cta')}
+        <span className="text-sm font-semibold text-ink-muted">{t('install.cta')}</span>
       </button>
 
       {isIos && showIosHelp && (
         <div
           role="dialog"
           aria-label={t('install.iosTitle')}
-          className="surface absolute right-0 top-9 z-50 w-64 bg-paper-raised p-3 text-left shadow-soft"
+          className="surface absolute right-0 top-full z-50 mt-2 w-64 bg-paper-raised p-3 text-left shadow-soft"
         >
           <p className="mb-2 text-sm font-bold text-ink">{t('install.iosTitle')}</p>
           <ol className="list-decimal space-y-1.5 pl-4 text-xs text-ink-muted">

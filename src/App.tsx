@@ -14,8 +14,7 @@ export default function App() {
 
       <main className="relative z-10 flex-1 px-6 pt-12 pb-10 sm:px-8 sm:pt-16 max-w-md mx-auto w-full flex flex-col items-center gap-8">
         <div className="relative w-full">
-          <div className="absolute -top-7 -right-1 flex flex-row items-center gap-2">
-            <InstallButton />
+          <div className="absolute -top-7 -right-1">
             <LanguageSwitcher />
           </div>
           <h1 className="font-round text-5xl sm:text-6xl font-bold tracking-tight text-center text-pink">
@@ -23,7 +22,10 @@ export default function App() {
           </h1>
         </div>
 
-        <HowToPlay />
+        <div className="flex w-full max-w-sm items-stretch gap-2">
+          <HowToPlay />
+          <InstallButton />
+        </div>
         <Lobby />
 
         <footer className="mt-auto pt-6">
