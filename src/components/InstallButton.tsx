@@ -1,16 +1,43 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, type CSSProperties } from 'react';
 import { useI18n } from '../i18n/I18nContext';
 import { useInstallPrompt } from '../hooks/useInstallPrompt';
 
-// "Add to Home Screen" pill, anchored under the language globe on the home
-// page. On Android/Chromium it fires the native install dialog; on iOS (no
-// programmatic install) it opens a small how-to card. Hidden once the app is
-// installed/standalone, or when no install path is available.
+const rand = (min: number, max: number) => min + Math.random() * (max - min);
+
+type Bubble = {
+  id: number;
+  size: number;
+  startX: number; // px offset from the pill centre where it spawns
+  bx: number; // px the bubble drifts horizontally
+  by: number; // px the bubble rises (negative = up)
+  dur: number; // seconds
+  delay: number; // seconds (stagger)
+};
+
+// One celebratory burst of soap bubbles floating up out of the pill.
+function makeBurst(nextId: () => number): Bubble[] {
+  return Array.from({ length: 26 }, () => ({
+    id: nextId(),
+    size: rand(8, 22),
+    startX: rand(-18, 18),
+    bx: rand(-70, 70),
+    by: rand(-150, -70),
+    dur: rand(0.9, 1.6),
+    delay: rand(0, 0.18),
+  }));
+}
+
+// "Add to Home Screen" pill, paired with How-to-play under the title. On
+// Android/Chromium it fires the native install dialog; on iOS (no programmatic
+// install) it opens a small how-to card. Once the app is installed it stays put
+// and becomes a soap-bubble button — each tap pops a burst of bubbles.
 export function InstallButton() {
   const { t } = useI18n();
-  const { canPrompt, isIos, isStandalone, promptInstall } = useInstallPrompt();
+  const { canPrompt, isIos, isStandalone, installed, promptInstall } = useInstallPrompt();
   const [showIosHelp, setShowIosHelp] = useState(false);
+  const [bubbles, setBubbles] = useState<Bubble[]>([]);
   const rootRef = useRef<HTMLDivElement>(null);
+  const idRef = useRef(0);
 
   // Dismiss the iOS help card on outside tap / Escape — mirrors LanguageSwitcher.
   useEffect(() => {
@@ -29,13 +56,27 @@ export function InstallButton() {
     };
   }, [showIosHelp]);
 
-  if (isStandalone) return null;
-  // Android shows only once the browser confirms installability; iOS always
-  // can (manually), so offer the instructions there.
-  if (!canPrompt && !isIos) return null;
+  // Already installed: running standalone, or installed via our button this
+  // session. There's nothing left to install, so the pill just pops bubbles.
+  const alreadyInstalled = isStandalone || installed;
+
+  // Hide only when there's no install path at all and the app isn't installed
+  // (e.g. a desktop browser that never offers an install) — keeps the row tidy.
+  if (!canPrompt && !isIos && !alreadyInstalled) return null;
+
+  const popBubbles = () => {
+    const batch = makeBurst(() => idRef.current++);
+    setBubbles((prev) => [...prev, ...batch]);
+    const ids = new Set(batch.map((b) => b.id));
+    window.setTimeout(
+      () => setBubbles((prev) => prev.filter((b) => !ids.has(b.id))),
+      1900,
+    );
+  };
 
   const onClick = () => {
-    if (canPrompt) void promptInstall();
+    if (alreadyInstalled) popBubbles();
+    else if (canPrompt) void promptInstall();
     else setShowIosHelp((s) => !s);
   };
 
@@ -44,9 +85,9 @@ export function InstallButton() {
       <button
         type="button"
         onClick={onClick}
-        aria-haspopup={isIos ? 'dialog' : undefined}
-        aria-expanded={isIos ? showIosHelp : undefined}
-        className="surface flex h-full w-full items-center justify-center gap-2 px-3 py-3 text-center active:scale-95 transition"
+        aria-haspopup={isIos && !alreadyInstalled ? 'dialog' : undefined}
+        aria-expanded={isIos && !alreadyInstalled ? showIosHelp : undefined}
+        className="surface relative flex h-full w-full items-center justify-center gap-2 overflow-visible px-3 py-3 text-center active:scale-95 transition"
       >
         <svg
           viewBox="0 0 24 24"
@@ -63,6 +104,30 @@ export function InstallButton() {
           <path d="M12 8v6m0 0-2.5-2.5M12 14l2.5-2.5" />
         </svg>
         <span className="text-sm font-semibold text-ink-muted">{t('install.cta')}</span>
+
+        {/* Soap-bubble burst: spawns from the pill centre and floats up/out. */}
+        {bubbles.length > 0 && (
+          <span aria-hidden="true" className="pointer-events-none absolute inset-0 overflow-visible">
+            {bubbles.map((b) => (
+              <span
+                key={b.id}
+                className="animate-bubble-rise absolute rounded-full bg-white/70 ring-1 ring-white/90"
+                style={
+                  {
+                    width: b.size,
+                    height: b.size,
+                    left: `calc(50% + ${b.startX}px)`,
+                    top: '50%',
+                    '--bx': `${b.bx}px`,
+                    '--by': `${b.by}px`,
+                    '--bdur': `${b.dur}s`,
+                    animationDelay: `${b.delay}s`,
+                  } as CSSProperties
+                }
+              />
+            ))}
+          </span>
+        )}
       </button>
 
       {isIos && showIosHelp && (
