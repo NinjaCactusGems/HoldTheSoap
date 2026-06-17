@@ -11,3 +11,13 @@ createRoot(document.getElementById('root')!).render(
     </I18nProvider>
   </StrictMode>,
 );
+
+// Register the no-op service worker so the app qualifies as installable. Only
+// in production builds (the dev server has no /sw.js) and where supported.
+if (import.meta.env.PROD && 'serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('/sw.js').catch(() => {
+      // Install/offline is a progressive enhancement — ignore failures.
+    });
+  });
+}

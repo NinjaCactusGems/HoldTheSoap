@@ -1,64 +1,86 @@
-import { useId, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useI18n } from '../i18n/I18nContext';
 import { howToPlayRules } from '../i18n/richText';
 
-// Collapsible "How to play" disclosure shown between the title and the lobby.
-// Tapping the header toggles a panel that explains the rules.
+// "How to play" pill that opens a closeable modal explaining the rules. Sits
+// next to the install pill as one of a 50/50 pair under the title. The modal
+// closes via the ✕, an outside (backdrop) tap, or Escape.
 export function HowToPlay() {
   const { t, locale } = useI18n();
   const [open, setOpen] = useState(false);
-  const panelId = useId();
   const rules = howToPlayRules[locale];
 
+  useEffect(() => {
+    if (!open) return;
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setOpen(false);
+    };
+    window.addEventListener('keydown', onKeyDown);
+    return () => window.removeEventListener('keydown', onKeyDown);
+  }, [open]);
+
   return (
-    <div className="w-full max-w-sm">
+    <div className="flex-1">
       <button
         type="button"
+        aria-haspopup="dialog"
         aria-expanded={open}
-        aria-controls={panelId}
-        onClick={() => setOpen((v) => !v)}
-        className="surface w-full flex items-center gap-3 px-5 py-3 text-left active:scale-95 transition"
+        onClick={() => setOpen(true)}
+        className="surface flex h-full w-full items-center justify-center gap-2 px-3 py-3 active:scale-95 transition"
       >
         <span
           aria-hidden="true"
-          className="grid h-7 w-7 shrink-0 place-items-center rounded-full bg-ink text-paper font-round font-bold"
+          className="grid h-6 w-6 shrink-0 place-items-center rounded-full bg-ink text-paper font-round text-sm font-bold"
         >
           ?
         </span>
-        <span className="flex-1 text-sm font-semibold uppercase tracking-wider text-ink-muted">
+        <span className="text-sm font-semibold text-ink-muted">
           {t('howToPlay.title')}
-        </span>
-        <span
-          aria-hidden="true"
-          className={`text-ink-muted transition-transform duration-200 ${
-            open ? 'rotate-180' : ''
-          }`}
-        >
-          ▾
         </span>
       </button>
 
-      <div
-        id={panelId}
-        hidden={!open}
-        className="surface mt-2 px-5 py-4 text-sm leading-relaxed text-ink"
-      >
-        <p className="text-ink-muted">{t('howToPlay.intro')}</p>
-        <ol className="mt-3 flex flex-col gap-3.5">
-          {rules.map((rule, i) => {
-            const n = (i + 1) as 1 | 2 | 3 | 4;
-            return (
-              <li key={n} className="flex gap-2.5">
-                <span className="font-round font-bold text-accent">{n}.</span>
-                <span className="flex min-w-0 flex-1 flex-col gap-1.5">
-                  <span>{rule()}</span>
-                  <BulletFigure n={n} />
-                </span>
-              </li>
-            );
-          })}
-        </ol>
-      </div>
+      {open && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div
+            className="absolute inset-0 bg-ink/40"
+            aria-hidden="true"
+            onClick={() => setOpen(false)}
+          />
+          <div
+            role="dialog"
+            aria-modal="true"
+            aria-label={t('howToPlay.title')}
+            className="surface relative z-10 max-h-[85vh] w-full max-w-sm overflow-y-auto bg-paper-raised p-5 text-sm leading-relaxed text-ink shadow-soft"
+          >
+            <button
+              type="button"
+              onClick={() => setOpen(false)}
+              aria-label={t('app.close')}
+              className="absolute right-3 top-3 grid h-7 w-7 place-items-center rounded-full text-ink-muted transition active:scale-95"
+            >
+              ✕
+            </button>
+            <h2 className="mb-2 pr-8 text-base font-bold uppercase tracking-wider text-ink-muted">
+              {t('howToPlay.title')}
+            </h2>
+            <p className="text-ink-muted">{t('howToPlay.intro')}</p>
+            <ol className="mt-3 flex flex-col gap-3.5">
+              {rules.map((rule, i) => {
+                const n = (i + 1) as 1 | 2 | 3 | 4;
+                return (
+                  <li key={n} className="flex gap-2.5">
+                    <span className="font-round font-bold text-accent">{n}.</span>
+                    <span className="flex min-w-0 flex-1 flex-col gap-1.5">
+                      <span>{rule()}</span>
+                      <BulletFigure n={n} />
+                    </span>
+                  </li>
+                );
+              })}
+            </ol>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

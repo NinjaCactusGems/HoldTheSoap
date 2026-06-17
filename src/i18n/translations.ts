@@ -6,6 +6,13 @@
 export const en = {
   'app.title': 'HOLD THE SOAP',
   'app.language': 'Language',
+  'app.close': 'Close',
+
+  'install.cta': 'Add to Home Screen',
+  'install.iosTitle': 'Add to Home Screen',
+  'install.iosStep1': 'Tap the Share button in your browser toolbar.',
+  'install.iosStep2': 'Choose “Add to Home Screen”.',
+  'install.close': 'Got it',
 
   'howToPlay.title': 'How to play',
   'howToPlay.intro':
@@ -88,6 +95,13 @@ export type TranslationKey = keyof typeof en;
 export const de: Record<TranslationKey, string> = {
   'app.title': 'HALTE DIE SEIFE',
   'app.language': 'Sprache',
+  'app.close': 'Schließen',
+
+  'install.cta': 'Zum Startbildschirm',
+  'install.iosTitle': 'Zum Startbildschirm hinzufügen',
+  'install.iosStep1': 'Tippe auf das Teilen-Symbol in der Browser-Leiste.',
+  'install.iosStep2': 'Wähle „Zum Home-Bildschirm“.',
+  'install.close': 'Verstanden',
 
   'howToPlay.title': 'Spielanleitung',
   'howToPlay.intro':
@@ -170,6 +184,13 @@ export const de: Record<TranslationKey, string> = {
 export const es: Record<TranslationKey, string> = {
   'app.title': 'SUJETA EL JABÓN',
   'app.language': 'Idioma',
+  'app.close': 'Cerrar',
+
+  'install.cta': 'Añadir a inicio',
+  'install.iosTitle': 'Añadir a la pantalla de inicio',
+  'install.iosStep1': 'Toca el botón Compartir en la barra del navegador.',
+  'install.iosStep2': 'Elige «Añadir a pantalla de inicio».',
+  'install.close': 'Entendido',
 
   'howToPlay.title': 'Cómo se juega',
   'howToPlay.intro':
@@ -252,6 +273,13 @@ export const es: Record<TranslationKey, string> = {
 export const pt: Record<TranslationKey, string> = {
   'app.title': 'SEGURA O SABONETE',
   'app.language': 'Idioma',
+  'app.close': 'Fechar',
+
+  'install.cta': 'Adicionar à tela inicial',
+  'install.iosTitle': 'Adicionar à tela de início',
+  'install.iosStep1': 'Toque no botão Compartilhar na barra do navegador.',
+  'install.iosStep2': 'Escolha “Adicionar à Tela de Início”.',
+  'install.close': 'Entendi',
 
   'howToPlay.title': 'Como jogar',
   'howToPlay.intro':
@@ -334,6 +362,13 @@ export const pt: Record<TranslationKey, string> = {
 export const fr: Record<TranslationKey, string> = {
   'app.title': 'TIENS LE SAVON',
   'app.language': 'Langue',
+  'app.close': 'Fermer',
+
+  'install.cta': 'Ajouter à l’écran d’accueil',
+  'install.iosTitle': 'Ajouter à l’écran d’accueil',
+  'install.iosStep1': 'Touche le bouton Partager dans la barre du navigateur.',
+  'install.iosStep2': 'Choisis « Sur l’écran d’accueil ».',
+  'install.close': 'Compris',
 
   'howToPlay.title': 'Comment jouer',
   'howToPlay.intro':

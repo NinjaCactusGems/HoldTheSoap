@@ -79,9 +79,29 @@
 }
 
 @layer utilities {
-  /* Reaction emoji particle: drifts up the screen while fading out. */
-  @keyframes reaction-float {
+  /* Install-pill easter egg: a burst of soap bubbles when the (already
+     installed) pill is tapped. Each particle floats out/up to a per-bubble
+     end-point (--bx/--by) over its own duration (--bdur); `both` fill applies
+     the start state during the stagger delay. */
+  @keyframes bubble-rise {
     0% {
+      transform: translate(-50%, -50%) scale(0.3);
+      opacity: 0;
+    }
+    15% {
+      opacity: 0.9;
+    }
+    100% {
+      transform: translate(calc(-50% + var(--bx)), calc(-50% + var(--by))) scale(1);
+      opacity: 0;
+    }
+  }
+  .animate-bubble-rise {
+    animation: bubble-rise var(--bdur, 1.2s) ease-out both;
+  }
+
+  /* Reaction emoji particle: drifts up the screen while fading out. */
+  @keyframes reaction-float {  0% {
       transform: translateY(0) scale(0.6);
       opacity: 0;
     }

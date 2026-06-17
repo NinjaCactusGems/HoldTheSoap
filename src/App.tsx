@@ -2,6 +2,7 @@ import { Lobby } from './components/Lobby';
 import { HowToPlay } from './components/HowToPlay';
 import { Bubbles } from './components/Bubbles';
 import { LanguageSwitcher } from './components/LanguageSwitcher';
+import { InstallButton } from './components/InstallButton';
 import { useI18n } from './i18n/I18nContext';
 
 export default function App() {
@@ -21,7 +22,10 @@ export default function App() {
           </h1>
         </div>
 
-        <HowToPlay />
+        <div className="flex w-full max-w-sm items-stretch gap-2">
+          <HowToPlay />
+          <InstallButton />
+        </div>
         <Lobby />
 
         <footer className="mt-auto pt-6">
