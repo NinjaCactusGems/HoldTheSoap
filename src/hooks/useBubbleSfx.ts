@@ -3,12 +3,12 @@ import { sfx } from '../lib/sfx';
 
 // Pop rate sweeps exponentially with `closeness` (0 = perfectly steady,
 // 1 = right at the elimination threshold): rate(c) = RATE_MIN_HZ · RATIO^c.
-const RATE_MIN_HZ = 0.8; // steady phone → a pop roughly every ~1.2s, always present
-const RATE_MAX_HZ = 6.5; // at the threshold → ~6–7 pops/s, almost annoying
+const RATE_MIN_HZ = 1.6; // steady phone → a pop roughly every ~0.6s, always present
+const RATE_MAX_HZ = 13; // at the threshold → ~13 pops/s, a near-constant fizz
 const RATE_RATIO = RATE_MAX_HZ / RATE_MIN_HZ;
 // Clamp the randomized gaps so the stream never machine-guns or stalls.
-const MIN_DELAY_MS = 90;
-const MAX_DELAY_MS = 2500;
+const MIN_DELAY_MS = 45;
+const MAX_DELAY_MS = 1250;
 
 /**
  * The hold phase's audio pressure gauge: random bubble pops whose frequency

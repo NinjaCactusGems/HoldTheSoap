@@ -609,7 +609,7 @@ function Room({
             }}
           />
           <span className="pointer-events-none absolute inset-0 grid place-items-center">
-            <span className="grid h-10 w-10 place-items-center rounded-2xl bg-go text-paper shadow-soft">
+            <span className="grid h-10 w-10 place-items-center rounded-2xl text-ink">
               {copied ? (
                 <svg
                   viewBox="0 0 24 24"
@@ -624,6 +624,8 @@ function Room({
                   <path d="m5 13 4 4L19 7" />
                 </svg>
               ) : (
+                /* Common "share / forward" arrow: a flat shaft curving up and
+                   to the right into the arrowhead. */
                 <svg
                   viewBox="0 0 24 24"
                   fill="none"
@@ -634,8 +636,8 @@ function Room({
                   className="h-5 w-5"
                   aria-hidden
                 >
-                  <path d="M5 12h14" />
-                  <path d="m13 6 6 6-6 6" />
+                  <path d="M4 17v-1a6 6 0 0 1 6-6h8" />
+                  <path d="m13 5 6 5-6 5" />
                 </svg>
               )}
             </span>
@@ -857,8 +859,10 @@ function Room({
   return lobbyPanel;
 }
 
-// Decorative glitter around the ready button while a match is startable. Each
-// sparkle is a small dot that twinkles on a staggered delay (animate-glitter).
+// Decorative bubbles around the ready button while a match is startable. Each
+// is a small blue/white dot that twinkles on a staggered delay (animate-glitter).
+// Translucent fills + a faint ring keep the white ones readable on the light
+// panel surface.
 type Spark = {
   top?: string;
   bottom?: string;
@@ -869,21 +873,39 @@ type Spark = {
   color: string;
 };
 
+// Two bubble looks: white (translucent + blue ring) and blue (translucent).
+const BUBBLE_WHITE = 'bg-white/70 ring-1 ring-go/40';
+const BUBBLE_BLUE = 'bg-go/60 ring-1 ring-go/30';
+
 const SPARKS: Spark[] = [
-  { top: '-7px', left: '8%', size: 6, delay: '0s', color: 'bg-go' },
-  { top: '-11px', left: '34%', size: 4, delay: '0.5s', color: 'bg-accent' },
-  { top: '-5px', left: '62%', size: 5, delay: '0.9s', color: 'bg-ochre' },
-  { top: '-9px', left: '88%', size: 5, delay: '0.2s', color: 'bg-accent' },
-  { bottom: '-7px', left: '14%', size: 5, delay: '0.7s', color: 'bg-ochre' },
-  { bottom: '-10px', left: '46%', size: 4, delay: '1.1s', color: 'bg-go' },
-  { bottom: '-5px', left: '76%', size: 6, delay: '0.35s', color: 'bg-accent' },
-  { top: '38%', left: '-6px', size: 4, delay: '0.6s', color: 'bg-go' },
-  { top: '38%', right: '-6px', size: 4, delay: '1.0s', color: 'bg-ochre' },
+  { top: '-8px', left: '4%', size: 7, delay: '0s', color: BUBBLE_WHITE },
+  { top: '-12px', left: '16%', size: 5, delay: '0.5s', color: BUBBLE_BLUE },
+  { top: '-6px', left: '27%', size: 9, delay: '0.9s', color: BUBBLE_WHITE },
+  { top: '-13px', left: '38%', size: 4, delay: '0.2s', color: BUBBLE_BLUE },
+  { top: '-7px', left: '49%', size: 6, delay: '1.3s', color: BUBBLE_WHITE },
+  { top: '-11px', left: '60%', size: 5, delay: '0.45s', color: BUBBLE_BLUE },
+  { top: '-6px', left: '71%', size: 8, delay: '0.75s', color: BUBBLE_WHITE },
+  { top: '-12px', left: '82%', size: 4, delay: '1.1s', color: BUBBLE_BLUE },
+  { top: '-7px', left: '93%', size: 6, delay: '0.3s', color: BUBBLE_WHITE },
+  { bottom: '-8px', left: '7%', size: 6, delay: '0.65s', color: BUBBLE_BLUE },
+  { bottom: '-12px', left: '20%', size: 4, delay: '1.2s', color: BUBBLE_WHITE },
+  { bottom: '-6px', left: '32%', size: 8, delay: '0.15s', color: BUBBLE_BLUE },
+  { bottom: '-11px', left: '44%', size: 5, delay: '0.85s', color: BUBBLE_WHITE },
+  { bottom: '-7px', left: '55%', size: 7, delay: '0.4s', color: BUBBLE_BLUE },
+  { bottom: '-12px', left: '67%', size: 4, delay: '1.0s', color: BUBBLE_WHITE },
+  { bottom: '-6px', left: '78%', size: 9, delay: '0.55s', color: BUBBLE_BLUE },
+  { bottom: '-10px', left: '90%', size: 5, delay: '0.25s', color: BUBBLE_WHITE },
+  { top: '20%', left: '-8px', size: 6, delay: '0.7s', color: BUBBLE_BLUE },
+  { top: '58%', left: '-10px', size: 4, delay: '1.15s', color: BUBBLE_WHITE },
+  { top: '38%', left: '-7px', size: 5, delay: '0.35s', color: BUBBLE_BLUE },
+  { top: '20%', right: '-8px', size: 6, delay: '0.95s', color: BUBBLE_WHITE },
+  { top: '58%', right: '-10px', size: 4, delay: '0.5s', color: BUBBLE_BLUE },
+  { top: '38%', right: '-7px', size: 5, delay: '1.25s', color: BUBBLE_WHITE },
 ];
 
 function Sparkles() {
   return (
-    <div aria-hidden className="pointer-events-none absolute -inset-2 z-0">
+    <div aria-hidden className="pointer-events-none absolute -inset-3 z-0">
       {SPARKS.map((s, i) => (
         <span
           key={i}
