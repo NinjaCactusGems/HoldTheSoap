@@ -15,6 +15,11 @@ const PARTY_HOST = import.meta.env.VITE_PARTY_HOST || 'localhost:1999';
 
 const PLAYER_NAME_KEY = 'holdthesoap:playerName';
 
+// 1×1 transparent GIF, fed to QRCodeSVG's imageSettings with excavate:true to
+// carve a clean white square in the QR center for the share button to sit in.
+const TRANSPARENT_PIXEL =
+  'data:image/gif;base64,R0lGODlhAQABAAAAACH5BAEKAAEALAAAAAABAAEAAAICTAEAOw==';
+
 // The hold phase runs at the fixed Normal/medium threshold (7 m/s², per the
 // CLAUDE.md presets) for everyone, all round.
 const HOLD_THRESHOLD = 7;
@@ -137,16 +142,16 @@ function IdleLobby({ onEnter }: { onEnter: (code: string) => void }) {
   const canJoin = normalized.length >= 3;
 
   return (
-    <div className="w-full max-w-sm rounded-2xl border border-line bg-paper-raised/80 p-5 flex flex-col gap-4">
+    <div className="surface w-full max-w-sm p-6 flex flex-col gap-5">
       <button
         type="button"
         onClick={() => onEnter(generateRoomCode())}
-        className="w-full rounded-full bg-go px-6 py-3 text-base font-semibold text-paper shadow-lg shadow-go/20 active:scale-95 transition"
+        className="btn btn-primary w-full"
       >
         {t('lobby.create')}
       </button>
 
-      <div className="flex items-center gap-2 text-xs text-ink-faint">
+      <div className="my-1 flex items-center gap-2 text-xs text-ink-faint">
         <div className="h-px flex-1 bg-line" />
         <span>{t('lobby.or')}</span>
         <div className="h-px flex-1 bg-line" />
@@ -169,13 +174,9 @@ function IdleLobby({ onEnter }: { onEnter: (code: string) => void }) {
           value={joinCode}
           onChange={(e) => setJoinCode(e.target.value)}
           maxLength={8}
-          className="w-full rounded-xl border border-line bg-paper px-4 py-3 text-center text-lg font-mono tracking-[0.3em] uppercase text-ink placeholder:text-ink-faint focus:outline-none focus:border-ink-muted"
+          className="field text-center text-lg font-mono tracking-[0.12em] uppercase placeholder:normal-case placeholder:font-medium placeholder:tracking-normal"
         />
-        <button
-          type="submit"
-          disabled={!canJoin}
-          className="w-full rounded-full bg-ink px-6 py-3 text-base font-semibold text-paper active:scale-95 transition disabled:bg-line disabled:text-ink-faint"
-        >
+        <button type="submit" disabled={!canJoin} className="btn btn-primary w-full">
           {t('lobby.join')}
         </button>
       </form>
@@ -222,6 +223,7 @@ function Room({
   const [copied, setCopied] = useState(false);
   const [editing, setEditing] = useState(false);
   const [draftName, setDraftName] = useState('');
+  const [confirmingLeave, setConfirmingLeave] = useState(false);
 
   // One motion session for the whole room, started on the "I'm ready" gesture
   // (iOS requires the permission request to come from a user gesture). The
@@ -452,6 +454,20 @@ function Room({
     }
   };
 
+  // Tapping the QR shares the room. Prefer the OS share sheet where available
+  // (mobile); fall back to copying the link (desktop), reusing the copied cue.
+  const share = async () => {
+    if (typeof navigator !== 'undefined' && typeof navigator.share === 'function') {
+      try {
+        await navigator.share({ title: 'Hold the Soap', text: 'Hold the Soap', url: shareUrl });
+      } catch {
+        // User dismissed the sheet, or share failed — nothing to do.
+      }
+      return;
+    }
+    void copy();
+  };
+
   const startEditing = () => {
     setDraftName(me?.name ?? myName.current);
     setEditing(true);
@@ -494,34 +510,186 @@ function Room({
     );
   }
 
+  const canStart = allReady && enoughSides;
+  const requirementKey = canStart
+    ? 'room.starting'
+    : !allReady
+      ? 'room.waitingEveryone'
+      : activePlayers.length <= 1
+        ? 'room.needPlayers'
+        : 'room.needTeams';
+
   const lobbyPanel = (
-    <div className="w-full max-w-sm rounded-2xl border border-line bg-paper-raised/80 p-5 flex flex-col gap-4">
-      <div className="flex items-baseline justify-between">
-        <h2 className="text-sm font-semibold uppercase tracking-wider text-ink-muted">
-          {t('room.group')}
-        </h2>
-        <StatusBadge status={status} />
-      </div>
+    <div className="surface relative w-full max-w-sm p-6 flex flex-col gap-5">
+      {status !== 'open' && <ConnectionSwirl status={status} />}
 
-      <div className="text-center font-serif text-4xl tracking-[0.4em] text-ink">
-        {code}
-      </div>
-
-      <div className="flex flex-col items-center gap-3">
-        <div className="rounded-xl bg-paper-raised p-3">
-          <QRCodeSVG value={shareUrl} size={140} bgColor="#FFFFFF" fgColor="#243743" />
-        </div>
+      {/* Leave: a small X top-right that asks to confirm before exiting. */}
+      <div className="absolute right-3 top-3 z-20">
         <button
           type="button"
-          onClick={copy}
-          className="w-full rounded-full border border-line bg-paper px-4 py-2 text-sm font-medium text-ink active:scale-95 transition"
+          onClick={() => setConfirmingLeave(true)}
+          aria-label={t('room.leave')}
+          className="btn-ghost grid h-8 w-8 place-items-center p-0"
         >
-          {t(copied ? 'room.linkCopied' : 'room.copyLink')}
+          <svg
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth={2}
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            className="h-4 w-4"
+            aria-hidden
+          >
+            <path d="M18 6 6 18" />
+            <path d="m6 6 12 12" />
+          </svg>
+        </button>
+        {confirmingLeave && (
+          <>
+            <div
+              className="fixed inset-0 z-20"
+              onClick={() => setConfirmingLeave(false)}
+            />
+            <div className="surface absolute right-0 top-10 z-30 w-48 p-3 shadow-soft flex flex-col gap-2.5">
+              <p className="text-sm font-semibold text-ink">
+                {t('room.leaveConfirm')}
+              </p>
+              <div className="flex gap-2">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setConfirmingLeave(false);
+                    onLeave();
+                  }}
+                  className="btn flex-1 bg-eliminated px-3 py-2 text-sm text-paper"
+                >
+                  {t('room.leave')}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setConfirmingLeave(false)}
+                  className="btn btn-neutral flex-1 px-3 py-2 text-sm"
+                >
+                  {t('room.cancel')}
+                </button>
+              </div>
+            </div>
+          </>
+        )}
+      </div>
+
+      <div className="flex justify-center pl-[0.2em]">
+        <span className="font-round text-3xl font-bold tracking-[0.2em] text-ink">
+          {code}
+        </span>
+      </div>
+
+      {/* The QR is the share control: tap to open the OS share sheet (mobile)
+          or copy the link (desktop). A center arrow badge reads as tappable;
+          level="H" error correction keeps it scannable behind the overlay. */}
+      <div className="flex flex-col items-center gap-3">
+        <button
+          type="button"
+          onClick={share}
+          aria-label={t(copied ? 'room.linkCopied' : 'room.share')}
+          className="relative rounded-xl bg-paper-raised p-3 active:scale-95 transition"
+        >
+          <QRCodeSVG
+            value={shareUrl}
+            size={140}
+            level="H"
+            bgColor="#FFFFFF"
+            fgColor="#243743"
+            imageSettings={{
+              src: TRANSPARENT_PIXEL,
+              height: 42,
+              width: 42,
+              excavate: true,
+            }}
+          />
+          <span className="pointer-events-none absolute inset-0 grid place-items-center">
+            <span className="grid h-10 w-10 place-items-center rounded-2xl text-ink">
+              {copied ? (
+                <svg
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth={2.5}
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  className="h-5 w-5"
+                  aria-hidden
+                >
+                  <path d="m5 13 4 4L19 7" />
+                </svg>
+              ) : (
+                /* Common "share / forward" arrow: a flat shaft curving up and
+                   to the right into the arrowhead. */
+                <svg
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth={2.5}
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  className="h-5 w-5"
+                  aria-hidden
+                >
+                  <path d="M4 17v-1a6 6 0 0 1 6-6h8" />
+                  <path d="m13 5 6 5-6 5" />
+                </svg>
+              )}
+            </span>
+          </span>
         </button>
       </div>
 
+      <div className="relative">
+        {enoughSides && <Sparkles />}
+        <button
+          type="button"
+          disabled={motionUnsupported || me?.noMotion}
+          onClick={() => onToggleReady(!(me?.ready ?? false))}
+          className={`btn relative z-10 w-full px-6 py-3.5 text-base text-paper shadow-soft disabled:bg-line disabled:text-ink-faint disabled:shadow-none ${
+            me?.ready ? 'bg-go' : 'bg-eliminated'
+          }`}
+        >
+          {t(me?.ready ? 'room.readyDone' : 'room.readyPrompt')}
+        </button>
+      </div>
+
+      {motionUnsupported && (
+        <p className="-mt-2 text-xs text-accent">{t('room.motionWarning')}</p>
+      )}
+
+      {/* No manual start: the server auto-starts the instant the room is
+          eligible. Once you've readied up, a bold warning calls out whatever is
+          still blocking the start. */}
+      {me?.ready && !canStart && (
+        <p
+          role="status"
+          className="flex items-center justify-center gap-2 text-center text-base font-bold text-ink"
+        >
+          <span aria-hidden>⚠️</span>
+          {t(requirementKey)}
+        </p>
+      )}
+
+      {testing && (
+        <button
+          type="button"
+          onClick={() =>
+            send({ type: 'addBot', name: generateBotName(), team: null })
+          }
+          className="btn btn-secondary w-full border-dashed text-ink-muted"
+        >
+          {t('room.addBot')}
+        </button>
+      )}
+
       <div className="flex flex-col gap-2">
-        <div className="text-xs uppercase tracking-wider text-ink-muted">
+        <div className="text-center text-xs uppercase tracking-wider text-ink-muted">
           {t('room.players', { count: players.length })}
         </div>
         {players.length === 0 ? (
@@ -534,12 +702,13 @@ function Room({
               const isMe = p.id === myId;
               const isBot = p.id.startsWith('bot-');
               const team = teamById(p.team);
+              const teamsUnlocked = players.length >= MIN_PLAYERS_FOR_TEAMS;
               return (
                 <li
                   key={p.id}
-                  className={`flex items-center gap-2 rounded-lg px-2.5 py-2 text-sm ${
+                  className={`flex items-center gap-2 rounded-xl px-2.5 py-2 text-sm ${
                     isMe
-                      ? 'bg-go/10 ring-1 ring-go/40'
+                      ? 'bg-go/15 ring-1 ring-go/50'
                       : 'bg-paper'
                   } ${p.away ? 'opacity-50' : ''}`}
                 >
@@ -570,11 +739,11 @@ function Room({
                         maxLength={24}
                         onChange={(e) => setDraftName(e.target.value)}
                         onBlur={saveName}
-                        className="min-w-0 flex-1 rounded-md border border-line bg-paper px-2 py-1 text-sm text-ink focus:outline-none focus:border-go"
+                        className="field min-w-0 flex-1 px-2.5 py-1 text-sm"
                       />
                       <button
                         type="submit"
-                        className="shrink-0 rounded-md bg-go px-2 py-1 text-xs font-semibold text-paper"
+                        className="btn-ghost border-go bg-go text-paper"
                       >
                         {t('room.save')}
                       </button>
@@ -582,31 +751,17 @@ function Room({
                   ) : isBot && testing ? (
                     <>
                       <NameWithSoaps name={p.name} wins={p.wins} />
-                      {players.length >= MIN_PLAYERS_FOR_TEAMS ? (
-                        <select
-                          value={p.team ?? ''}
-                          onChange={(e) =>
-                            send({
-                              type: 'setBotTeam',
-                              id: p.id,
-                              team: (e.target.value || null) as TeamId | null,
-                            })
+                      {teamsUnlocked ? (
+                        <TeamPicker
+                          value={p.team}
+                          onChange={(team) =>
+                            send({ type: 'setBotTeam', id: p.id, team })
                           }
-                          className="min-w-0 shrink rounded-md border border-line bg-paper px-1.5 py-1 text-xs text-ink focus:outline-none focus:border-go"
-                        >
-                          <option value="">{t('room.teamSolo')}</option>
-                          {TEAMS.map((tm) => (
-                            <option key={tm.id} value={tm.id}>
-                              {t(`team.${tm.id}`)}
-                            </option>
-                          ))}
-                        </select>
+                        />
                       ) : (
                         team && (
-                          <span
-                            className="shrink-0 rounded-full px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-paper"
-                            style={{ backgroundColor: team.color }}
-                          >
+                          <span className="shrink-0 rounded-full bg-line px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-ink-muted">
+                            <span aria-hidden>{team.icon}</span>{' '}
                             {t(`team.${team.id}`)}
                           </span>
                         )
@@ -614,7 +769,7 @@ function Room({
                       <button
                         type="button"
                         onClick={() => send({ type: 'removeBot', id: p.id })}
-                        className="shrink-0 rounded-md border border-line px-2 py-1 text-xs font-medium text-ink-muted active:scale-95 transition"
+                        className="btn-ghost"
                       >
                         {t('room.removeBot')}
                       </button>
@@ -622,13 +777,20 @@ function Room({
                   ) : (
                     <>
                       <NameWithSoaps name={p.name} wins={p.wins} />
-                      {team && (
-                        <span
-                          className="shrink-0 rounded-full px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-paper"
-                          style={{ backgroundColor: team.color }}
-                        >
-                          {t(`team.${team.id}`)}
-                        </span>
+                      {isMe ? (
+                        teamsUnlocked && (
+                          <TeamPicker
+                            value={p.team}
+                            onChange={(team) => send({ type: 'setTeam', team })}
+                          />
+                        )
+                      ) : (
+                        team && (
+                          <span className="shrink-0 rounded-full bg-line px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-ink-muted">
+                            <span aria-hidden>{team.icon}</span>{' '}
+                            {t(`team.${team.id}`)}
+                          </span>
+                        )
                       )}
                       {p.noMotion && (
                         <span className="shrink-0 rounded-full bg-line px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-ink-muted">
@@ -641,18 +803,26 @@ function Room({
                         </span>
                       )}
                       {isMe && (
-                        <>
-                          <span className="shrink-0 rounded-full bg-go/20 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-go">
-                            {t('room.you')}
-                          </span>
-                          <button
-                            type="button"
-                            onClick={startEditing}
-                            className="shrink-0 rounded-md border border-line px-2 py-1 text-xs font-medium text-ink-muted active:scale-95 transition"
+                        <button
+                          type="button"
+                          onClick={startEditing}
+                          aria-label={t('room.rename')}
+                          className="btn-ghost grid h-7 w-7 place-items-center p-0"
+                        >
+                          <svg
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="currentColor"
+                            strokeWidth={2}
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            className="h-3.5 w-3.5"
+                            aria-hidden
                           >
-                            {t('room.rename')}
-                          </button>
-                        </>
+                            <path d="M12 20h9" />
+                            <path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z" />
+                          </svg>
+                        </button>
                       )}
                     </>
                   )}
@@ -662,83 +832,6 @@ function Room({
           </ul>
         )}
       </div>
-
-      {players.length >= MIN_PLAYERS_FOR_TEAMS && (
-        <label className="flex flex-col gap-1.5">
-          <span className="text-xs uppercase tracking-wider text-ink-muted">
-            {t('room.team')}
-          </span>
-          <select
-            value={me?.team ?? ''}
-            onChange={(e) =>
-              send({
-                type: 'setTeam',
-                team: (e.target.value || null) as TeamId | null,
-              })
-            }
-            className="w-full rounded-xl border border-line bg-paper px-4 py-3 text-base text-ink focus:outline-none focus:border-ink-muted"
-          >
-            <option value="">{t('room.teamSolo')}</option>
-            {TEAMS.map((tm) => (
-              <option key={tm.id} value={tm.id}>
-                {t(`team.${tm.id}`)}
-              </option>
-            ))}
-          </select>
-        </label>
-      )}
-
-      {testing && (
-        <button
-          type="button"
-          onClick={() =>
-            send({ type: 'addBot', name: generateBotName(), team: null })
-          }
-          className="w-full rounded-full border border-dashed border-line bg-paper px-6 py-2.5 text-sm font-semibold text-ink-muted active:scale-95 transition"
-        >
-          {t('room.addBot')}
-        </button>
-      )}
-
-      <button
-        type="button"
-        disabled={motionUnsupported || me?.noMotion}
-        onClick={() => onToggleReady(!(me?.ready ?? false))}
-        className={`w-full rounded-full px-6 py-4 text-lg font-semibold text-paper shadow-lg active:scale-95 transition disabled:bg-line disabled:text-ink-faint disabled:shadow-none ${
-          me?.ready ? 'bg-go shadow-go/25' : 'bg-eliminated shadow-eliminated/25'
-        }`}
-      >
-        {t(me?.ready ? 'room.readyDone' : 'room.readyPrompt')}
-      </button>
-
-      {motionUnsupported && (
-        <p className="-mt-2 text-xs text-accent">{t('room.motionWarning')}</p>
-      )}
-
-      <button
-        type="button"
-        disabled={!allReady || !enoughSides}
-        onClick={() => send({ type: 'start' })}
-        className="w-full rounded-full bg-go px-6 py-3 text-base font-semibold text-paper shadow-lg shadow-go/20 active:scale-95 transition disabled:bg-line disabled:text-ink-faint disabled:shadow-none"
-      >
-        {t(
-          !allReady
-            ? 'room.waitingEveryone'
-            : !enoughSides
-              ? activePlayers.length <= 1
-                ? 'room.needPlayers'
-                : 'room.needTeams'
-              : 'room.startMatch',
-        )}
-      </button>
-
-      <button
-        type="button"
-        onClick={onLeave}
-        className="w-full rounded-full bg-line px-6 py-3 text-sm font-semibold text-ink active:scale-95 transition"
-      >
-        {t('room.leave')}
-      </button>
     </div>
   );
 
@@ -768,35 +861,179 @@ function Room({
   return lobbyPanel;
 }
 
-function StatusBadge({ status }: { status: 'connecting' | 'open' | 'closed' }) {
-  const { t } = useI18n();
-  const styles =
-    status === 'open'
-      ? 'bg-go/15 text-go border-go/40'
-      : status === 'connecting'
-        ? 'bg-ochre/15 text-ochre border-ochre/40'
-        : 'bg-accent/15 text-accent border-accent/40';
-  const label = t(
-    status === 'open'
-      ? 'status.connected'
-      : status === 'connecting'
-        ? 'status.connecting'
-        : 'status.offline',
+// Decorative bubbles around the ready button while a match is startable. Each
+// is a small blue/white dot that twinkles on a staggered delay (animate-glitter).
+// Translucent fills + a faint ring keep the white ones readable on the light
+// panel surface.
+type Spark = {
+  top?: string;
+  bottom?: string;
+  left?: string;
+  right?: string;
+  size: number;
+  delay: string;
+  color: string;
+};
+
+// Two bubble looks: white (translucent + blue ring) and blue (translucent).
+const BUBBLE_WHITE = 'bg-white/70 ring-1 ring-go/40';
+const BUBBLE_BLUE = 'bg-go/60 ring-1 ring-go/30';
+
+// Positions hug the button edge — a couple of px outside to a couple inside —
+// so the foam clings to the rim rather than floating away from it.
+const SPARKS: Spark[] = [
+  { top: '-4px', left: '6%', size: 7, delay: '0s', color: BUBBLE_WHITE },
+  { top: '-6px', left: '18%', size: 5, delay: '0.5s', color: BUBBLE_BLUE },
+  { top: '2px', left: '29%', size: 8, delay: '0.9s', color: BUBBLE_WHITE },
+  { top: '-5px', left: '40%', size: 4, delay: '0.2s', color: BUBBLE_BLUE },
+  { top: '3px', left: '51%', size: 6, delay: '1.3s', color: BUBBLE_WHITE },
+  { top: '-5px', left: '62%', size: 5, delay: '0.45s', color: BUBBLE_BLUE },
+  { top: '2px', left: '73%', size: 7, delay: '0.75s', color: BUBBLE_WHITE },
+  { top: '-6px', left: '84%', size: 4, delay: '1.1s', color: BUBBLE_BLUE },
+  { top: '-4px', left: '94%', size: 6, delay: '0.3s', color: BUBBLE_WHITE },
+  { bottom: '-4px', left: '9%', size: 6, delay: '0.65s', color: BUBBLE_BLUE },
+  { bottom: '2px', left: '21%', size: 4, delay: '1.2s', color: BUBBLE_WHITE },
+  { bottom: '-5px', left: '33%', size: 8, delay: '0.15s', color: BUBBLE_BLUE },
+  { bottom: '3px', left: '45%', size: 5, delay: '0.85s', color: BUBBLE_WHITE },
+  { bottom: '-4px', left: '57%', size: 7, delay: '0.4s', color: BUBBLE_BLUE },
+  { bottom: '2px', left: '69%', size: 4, delay: '1.0s', color: BUBBLE_WHITE },
+  { bottom: '-5px', left: '80%', size: 8, delay: '0.55s', color: BUBBLE_BLUE },
+  { bottom: '-3px', left: '91%', size: 5, delay: '0.25s', color: BUBBLE_WHITE },
+  { top: '25%', left: '-3px', size: 6, delay: '0.7s', color: BUBBLE_BLUE },
+  { top: '60%', left: '2px', size: 4, delay: '1.15s', color: BUBBLE_WHITE },
+  { top: '25%', right: '-3px', size: 6, delay: '0.95s', color: BUBBLE_WHITE },
+  { top: '60%', right: '2px', size: 4, delay: '0.5s', color: BUBBLE_BLUE },
+];
+
+function Sparkles() {
+  return (
+    <div aria-hidden className="pointer-events-none absolute -inset-1 z-20">
+      {SPARKS.map((s, i) => (
+        <span
+          key={i}
+          className={`animate-glitter absolute rounded-full ${s.color}`}
+          style={{
+            top: s.top,
+            bottom: s.bottom,
+            left: s.left,
+            right: s.right,
+            width: s.size,
+            height: s.size,
+            animationDelay: s.delay,
+          }}
+        />
+      ))}
+    </div>
   );
+}
+
+// Connection indicator: a small spinning swirl in the panel's top-left, shown
+// only while connecting or offline (a healthy connection shows nothing). Ochre
+// while connecting, accent-red once the socket has dropped. Sits opposite the
+// leave X so the two never overlap.
+function ConnectionSwirl({ status }: { status: 'connecting' | 'closed' }) {
+  const { t } = useI18n();
   return (
     <span
-      className={`inline-flex items-center gap-1.5 rounded-full border px-2 py-0.5 text-[10px] font-medium uppercase tracking-wider ${styles}`}
-    >
-      <span
-        className={`h-1.5 w-1.5 rounded-full ${
-          status === 'open'
-            ? 'bg-go animate-pulse'
-            : status === 'connecting'
-              ? 'bg-ochre animate-pulse'
-              : 'bg-accent'
-        }`}
-      />
-      {label}
-    </span>
+      role="status"
+      aria-label={t(
+        status === 'connecting' ? 'status.connecting' : 'status.offline',
+      )}
+      className={`absolute left-3 top-3 h-4 w-4 animate-spin rounded-full border-2 border-line ${
+        status === 'connecting' ? 'border-t-ochre' : 'border-t-accent'
+      }`}
+    />
+  );
+}
+
+// Compact team selector: a small pill showing the chosen team's icon + a caret,
+// opening a menu of icon + full-name options. Mirrors LanguageSwitcher's
+// open / outside-click / Escape handling.
+function TeamPicker({
+  value,
+  onChange,
+}: {
+  value: TeamId | null;
+  onChange: (team: TeamId | null) => void;
+}) {
+  const { t } = useI18n();
+  const [open, setOpen] = useState(false);
+  const rootRef = useRef<HTMLDivElement>(null);
+  const current = teamById(value);
+
+  useEffect(() => {
+    if (!open) return;
+    const onPointerDown = (e: PointerEvent) => {
+      if (!rootRef.current?.contains(e.target as Node)) setOpen(false);
+    };
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setOpen(false);
+    };
+    window.addEventListener('pointerdown', onPointerDown);
+    window.addEventListener('keydown', onKeyDown);
+    return () => {
+      window.removeEventListener('pointerdown', onPointerDown);
+      window.removeEventListener('keydown', onKeyDown);
+    };
+  }, [open]);
+
+  return (
+    <div ref={rootRef} className="relative shrink-0">
+      <button
+        type="button"
+        aria-haspopup="menu"
+        aria-expanded={open}
+        aria-label={t('room.team')}
+        onClick={() => setOpen((o) => !o)}
+        className="flex items-center gap-1 rounded-full border border-line bg-paper px-2 py-1 text-sm text-ink-muted transition active:scale-95"
+      >
+        <span aria-hidden>{current ? current.icon : '–'}</span>
+        <span aria-hidden className="text-[10px] opacity-80">
+          ▾
+        </span>
+      </button>
+
+      {open && (
+        <div
+          role="menu"
+          aria-label={t('room.team')}
+          className="surface absolute bottom-full right-0 mb-1 z-50 max-h-60 min-w-40 overflow-y-auto bg-paper-raised p-1 shadow-soft"
+        >
+          <button
+            type="button"
+            role="menuitemradio"
+            aria-checked={value === null}
+            onClick={() => {
+              onChange(null);
+              setOpen(false);
+            }}
+            className={`flex w-full items-center gap-2 rounded-xl px-3 py-1.5 text-left text-sm font-semibold transition ${
+              value === null ? 'bg-ink text-paper' : 'text-ink-muted'
+            }`}
+          >
+            <span aria-hidden>👋</span>
+            {t('room.teamSolo')}
+          </button>
+          {TEAMS.map((tm) => (
+            <button
+              key={tm.id}
+              type="button"
+              role="menuitemradio"
+              aria-checked={value === tm.id}
+              onClick={() => {
+                onChange(tm.id);
+                setOpen(false);
+              }}
+              className={`flex w-full items-center gap-2 rounded-xl px-3 py-1.5 text-left text-sm font-semibold transition ${
+                value === tm.id ? 'bg-ink text-paper' : 'text-ink'
+              }`}
+            >
+              <span aria-hidden>{tm.icon}</span>
+              {t(`team.${tm.id}`)}
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
   );
 }

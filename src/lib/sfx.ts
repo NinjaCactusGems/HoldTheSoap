@@ -171,6 +171,26 @@ export const sfx = {
     osc.stop(t0 + dur + 0.02);
   },
 
+  // A single countdown blip for the "ready" phase: a short tone at the given
+  // pitch with a fast attack and a quick exponential decay (same envelope shape
+  // as a bubble pop, but a fixed pitch so the sequence reads as a melody).
+  countdown(freq: number) {
+    const ac = getCtx();
+    if (!ac) return;
+    const t0 = ac.currentTime;
+    const dur = 0.09;
+    const osc = ac.createOscillator();
+    osc.type = 'triangle';
+    osc.frequency.setValueAtTime(freq, t0);
+    const g = ac.createGain();
+    g.gain.setValueAtTime(0.0001, t0);
+    g.gain.exponentialRampToValueAtTime(0.18, t0 + 0.008);
+    g.gain.exponentialRampToValueAtTime(0.0001, t0 + dur);
+    osc.connect(g).connect(ac.destination);
+    osc.start(t0);
+    osc.stop(t0 + dur + 0.02);
+  },
+
   // A smiley tap: plays on every device (wired to the broadcast reaction event).
   reaction(name: string) {
     const spec = REACTION_NOTES[name];

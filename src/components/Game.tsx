@@ -4,7 +4,7 @@ import { useBubbleSfx } from '../hooks/useBubbleSfx';
 import { useI18n } from '../i18n/I18nContext';
 import { haptics } from '../lib/haptics';
 import { sfx } from '../lib/sfx';
-import { teamById, type TeamId } from '../lib/teams';
+import { type TeamId } from '../lib/teams';
 import { TILT_THRESHOLD_DEG, type useShakeDetector } from '../hooks/useShakeDetector';
 
 export type Phase = 'lobby' | 'ready' | 'holding' | 'winner';
@@ -112,6 +112,18 @@ export function Game(props: GameProps) {
   return <WinnerView {...props} />;
 }
 
+// Pitch (Hz) for each second of the countdown blip: it rises as the count nears
+// zero, except the third tick (s === 3) which dips back down before climbing
+// again. Falls back to a mid tone for any unexpected second.
+const COUNTDOWN_FREQ: Record<number, number> = {
+  5: 440,
+  4: 523,
+  3: 392,
+  2: 587,
+  1: 698,
+};
+const countdownFreq = (s: number) => COUNTDOWN_FREQ[s] ?? 523;
+
 // Get Ready: a synced countdown on the neutral staff background. A small tick
 // each second, a larger buzz on "Go". The server flips everyone to the hold
 // phase when the timer ends.
@@ -146,6 +158,7 @@ function ReadyView({
       if (s > 0 && lastTickRef.current !== s) {
         lastTickRef.current = s;
         haptics.tick();
+        sfx.countdown(countdownFreq(s));
       }
     };
     tick();
@@ -159,11 +172,11 @@ function ReadyView({
         {t('game.getReady')}
       </div>
       {secondsLeft > 0 ? (
-        <div className="font-serif text-9xl font-bold tabular-nums">
+        <div className="font-round text-9xl font-bold tabular-nums">
           {secondsLeft}
         </div>
       ) : (
-        <div className="font-serif text-8xl font-bold tracking-tight text-go">
+        <div className="font-round text-8xl font-bold tracking-tight text-go">
           {t('game.go')}
         </div>
       )}
@@ -329,11 +342,30 @@ function WinnerView({
   const { t } = useI18n();
   const me = players.find((p) => p.id === myId);
   const winner = players.find((p) => p.id === winnerId);
-  const winningTeam = teamById(winnerTeam);
+  // The winning side: a whole team, or the lone survivor.
+  const winners = winnerTeam
+    ? players.filter((p) => p.team === winnerTeam)
+    : winner
+      ? [winner]
+      : [];
   // A team victory counts for everyone on it; otherwise only the lone survivor.
   const iWon = winnerTeam
     ? me?.team === winnerTeam
     : winnerId !== null && winnerId === myId;
+
+  // Enumerate the winners as a comma-separated list with a localized "and"
+  // before the last name, then a localized singular/plural "win".
+  const names = winners.map((p) => p.name);
+  const namesList =
+    names.length <= 1
+      ? names.join('')
+      : `${names.slice(0, -1).join(', ')} ${t('game.and')} ${names[names.length - 1]}`;
+  const winLine =
+    names.length === 0
+      ? t('game.noOne')
+      : t(names.length === 1 ? 'game.winsSingular' : 'game.winsPlural', {
+          names: namesList,
+        });
 
   // Server timestamp → local clock (RTT-synced), so the back-to-lobby countdown
   // matches across devices.
@@ -355,18 +387,9 @@ function WinnerView({
       <div className="text-sm font-semibold uppercase tracking-[0.3em] text-ochre">
         {t(iWon ? 'game.youWin' : 'game.winner')}
       </div>
-      {winningTeam ? (
-        <div
-          className="font-serif text-5xl font-bold tracking-tight text-center px-6"
-          style={{ color: winningTeam.color }}
-        >
-          {t('game.teamWins', { team: t(`team.${winningTeam.id}`) })}
-        </div>
-      ) : (
-        <div className="font-serif text-5xl font-bold tracking-tight text-center px-6">
-          {winner?.name ?? t('game.noOne')}
-        </div>
-      )}
+      <div className="font-round text-5xl font-bold tracking-tight text-center px-6">
+        {winLine}
+      </div>
     </div>
   );
 
@@ -379,7 +402,7 @@ function WinnerView({
           key={r}
           type="button"
           onClick={() => onReaction(r)}
-          className="grid h-16 w-16 place-items-center rounded-2xl border border-line bg-paper-raised text-4xl shadow-sm active:scale-90 transition"
+          className="grid h-16 w-16 place-items-center rounded-2xl border border-line bg-paper-raised text-4xl shadow-sm active:scale-95 transition"
           aria-label={r}
         >
           {REACTION_EMOJI[r]}
@@ -389,20 +412,18 @@ function WinnerView({
   );
 
   if (postGame) {
+    // The whole overlay scrolls as one page (like the initial lobby), rather
+    // than pinning the lobby into its own inner scroll area.
     return (
-      <div className="fixed inset-0 z-50 flex flex-col overflow-hidden bg-sky text-ink">
+      <div className="fixed inset-0 z-50 overflow-y-auto bg-sky text-ink">
         <ReactionParticles lastReaction={lastReaction} />
-        <div className="flex shrink-0 flex-col items-center gap-4 px-6 pt-10 pb-4">
+        <div className="mx-auto flex w-full max-w-md flex-col items-center gap-4 px-6 pt-10 pb-10">
           {/* Once the lobby has slid up, the winner banner fades away so the
               room can focus on getting the next match going (smileys stay). */}
           <div className="animate-winner-fade">{header}</div>
           {smileys}
           <CoffeeLink />
-        </div>
-        <div className="relative z-10 flex min-h-0 flex-1 items-end justify-center px-4 pb-4">
-          <div className="animate-sheet-up max-h-full w-full max-w-sm overflow-y-auto">
-            {lobbySheet}
-          </div>
+          <div className="animate-sheet-up w-full max-w-sm">{lobbySheet}</div>
         </div>
       </div>
     );

@@ -32,7 +32,7 @@ const GRAVITY = 9.81;
 const SENSOR_PROBE_MS = 3000;
 
 /** Tilt (degrees from flat/screen-up) past which the soap slides off / drops. */
-export const TILT_THRESHOLD_DEG = 30;
+export const TILT_THRESHOLD_DEG = 45;
 
 const RAD_TO_DEG = 180 / Math.PI;
 

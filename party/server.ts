@@ -12,7 +12,6 @@ type TeamId =
   | 'sink'
   | 'bathtub'
   | 'toilet'
-  | 'basin'
   | 'bidet'
   | 'kitchen'
   | 'hottub';
@@ -171,7 +170,6 @@ const TEAM_IDS: readonly TeamId[] = [
   'sink',
   'bathtub',
   'toilet',
-  'basin',
   'bidet',
   'kitchen',
   'hottub',
@@ -296,6 +294,7 @@ export class Main extends Server {
         if (team !== null && !TEAM_IDS.includes(team)) return;
         this.patchPlayer(connection, { team });
         this.broadcastState();
+        this.maybeAutoStart();
         break;
       }
       case 'toggleReady': {
@@ -304,6 +303,7 @@ export class Main extends Server {
         if (msg.ready && !this.playerOf(connection).motionSupported) return;
         this.patchPlayer(connection, { ready: Boolean(msg.ready) });
         this.broadcastState();
+        this.maybeAutoStart();
         break;
       }
       case 'motionSupport': {
@@ -321,6 +321,7 @@ export class Main extends Server {
         this.patchPlayer(connection, patch);
         this.broadcastState();
         if (this.room.phase === 'holding') this.checkWinCondition();
+        this.maybeAutoStart();
         break;
       }
       case 'visibility': {
@@ -336,9 +337,12 @@ export class Main extends Server {
           visible ? { visible } : { visible, ready: false },
         );
         this.broadcastState();
+        this.maybeAutoStart();
         break;
       }
       case 'start': {
+        // Legacy: clients now auto-start via maybeAutoStart, but older cached
+        // clients may still send this. Idempotent (tryStartGame is guarded).
         this.tryStartGame();
         break;
       }
@@ -394,6 +398,7 @@ export class Main extends Server {
         };
         this.saveRoom();
         this.broadcastState();
+        this.maybeAutoStart();
         break;
       }
       case 'setBotTeam': {
@@ -405,6 +410,7 @@ export class Main extends Server {
         bot.team = team;
         this.saveRoom();
         this.broadcastState();
+        this.maybeAutoStart();
         break;
       }
       case 'removeBot': {
@@ -578,6 +584,14 @@ export class Main extends Server {
   // so they win alone.
   private factionKey(p: Player, teamsActive: boolean): string {
     return teamsActive && p.team ? `team:${p.team}` : `solo:${p.id}`;
+  }
+
+  // The match now starts itself the instant it becomes eligible (the last side
+  // readies up), rather than waiting on a manual "Play" press. Called after
+  // every lobby mutation; tryStartGame is fully guarded, so this is a no-op
+  // until all active players are ready across at least two sides.
+  private maybeAutoStart() {
+    if (this.room.phase === 'lobby') this.tryStartGame();
   }
 
   private tryStartGame() {

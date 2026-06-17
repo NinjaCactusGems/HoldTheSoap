@@ -17,11 +17,11 @@ export function HowToPlay() {
         aria-expanded={open}
         aria-controls={panelId}
         onClick={() => setOpen((v) => !v)}
-        className="w-full flex items-center gap-3 rounded-2xl border border-line bg-paper-raised/80 px-5 py-3 text-left active:scale-[0.99] transition"
+        className="surface w-full flex items-center gap-3 px-5 py-3 text-left active:scale-95 transition"
       >
         <span
           aria-hidden="true"
-          className="grid h-7 w-7 shrink-0 place-items-center rounded-full bg-ink text-paper font-serif font-bold"
+          className="grid h-7 w-7 shrink-0 place-items-center rounded-full bg-ink text-paper font-round font-bold"
         >
           ?
         </span>
@@ -41,7 +41,7 @@ export function HowToPlay() {
       <div
         id={panelId}
         hidden={!open}
-        className="mt-2 rounded-2xl border border-line bg-paper-raised/80 px-5 py-4 text-sm leading-relaxed text-ink"
+        className="surface mt-2 px-5 py-4 text-sm leading-relaxed text-ink"
       >
         <p className="text-ink-muted">{t('howToPlay.intro')}</p>
         <ol className="mt-3 flex flex-col gap-3.5">
@@ -49,7 +49,7 @@ export function HowToPlay() {
             const n = (i + 1) as 1 | 2 | 3 | 4;
             return (
               <li key={n} className="flex gap-2.5">
-                <span className="font-serif font-bold text-accent">{n}.</span>
+                <span className="font-round font-bold text-accent">{n}.</span>
                 <span className="flex min-w-0 flex-1 flex-col gap-1.5">
                   <span>{rule()}</span>
                   <BulletFigure n={n} />

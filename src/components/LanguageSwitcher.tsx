@@ -65,7 +65,7 @@ export function LanguageSwitcher() {
         <div
           role="menu"
           aria-label={t('app.language')}
-          className="absolute right-0 top-9 z-50 min-w-36 rounded-2xl border border-line bg-paper-raised p-1 shadow-lg"
+          className="surface absolute right-0 top-9 z-50 min-w-36 bg-paper-raised p-1 shadow-soft"
         >
           {SUPPORTED.map((l) => (
             <button
