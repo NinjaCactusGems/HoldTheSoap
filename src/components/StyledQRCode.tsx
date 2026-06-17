@@ -1,21 +1,18 @@
 import { useEffect, useRef } from 'react';
 import QRCodeStyling from 'qr-code-styling';
 
-// Soft, rounded-dot QR for the room share button. qr-code-styling is imperative
-// (append/update against a DOM node), so we drive it from refs. A radial mask
-// dissolves the dots into a round, soft-edged clearing in the centre where the
-// share arrow sits — replacing the old hard white excavated square. Level-H
-// error correction keeps it scannable behind the faded centre.
-//
-// Pixel stops (the QR is a fixed square): a transparent core that frames the
-// ~20px arrow with margin, then a soft band back to a fully opaque QR. The
-// cleared footprint stays close to the old 42px excavated square that scanned
-// fine, so level-H correction still recovers the centre. White fades to white
-// against the button background, so visually only the dark dots fade out.
-const FADE =
-  'radial-gradient(circle at center, transparent 20px, #000 34px)';
+// 1×1 transparent GIF handed to qr-code-styling as a centre "image" purely so
+// `hideBackgroundDots` carves a clean square clearing in the middle for the
+// share arrow — the library's native equivalent of the old excavate. The image
+// itself is invisible; the arrow is overlaid by the caller.
+const TRANSPARENT_PIXEL =
+  'data:image/gif;base64,R0lGODlhAQABAAAAACH5BAEKAAEALAAAAAABAAEAAAICTAEAOw==';
 
-export function StyledQRCode({ value, size = 140 }: { value: string; size?: number }) {
+// Soft, rounded-dot QR for the room share button. qr-code-styling is imperative
+// (append/update against a DOM node), so we drive it from refs. The background
+// is transparent so the code sits flush on the panel with no surrounding white
+// square; level-H error correction keeps it scannable with the centre cleared.
+export function StyledQRCode({ value, size = 176 }: { value: string; size?: number }) {
   const containerRef = useRef<HTMLDivElement>(null);
   const qrRef = useRef<QRCodeStyling | null>(null);
 
@@ -26,11 +23,13 @@ export function StyledQRCode({ value, size = 140 }: { value: string; size?: numb
       type: 'svg',
       data: value,
       margin: 0,
+      image: TRANSPARENT_PIXEL,
       qrOptions: { errorCorrectionLevel: 'H' },
       dotsOptions: { color: '#243743', type: 'rounded' },
-      backgroundOptions: { color: '#FFFFFF' },
+      backgroundOptions: { color: 'transparent' },
       cornersSquareOptions: { color: '#243743', type: 'extra-rounded' },
       cornersDotOptions: { color: '#243743', type: 'dot' },
+      imageOptions: { hideBackgroundDots: true, imageSize: 0.32, margin: 2 },
     });
     qrRef.current = qr;
     const node = containerRef.current;
@@ -51,7 +50,7 @@ export function StyledQRCode({ value, size = 140 }: { value: string; size?: numb
     <div
       ref={containerRef}
       aria-hidden="true"
-      style={{ width: size, height: size, WebkitMaskImage: FADE, maskImage: FADE }}
+      style={{ width: size, height: size }}
     />
   );
 }

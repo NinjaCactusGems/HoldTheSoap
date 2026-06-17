@@ -588,9 +588,9 @@ function Room({
           type="button"
           onClick={share}
           aria-label={t(copied ? 'room.linkCopied' : 'room.share')}
-          className="relative rounded-xl bg-paper-raised p-3 active:scale-95 transition"
+          className="relative active:scale-95 transition"
         >
-          <StyledQRCode value={shareUrl} size={140} />
+          <StyledQRCode value={shareUrl} size={176} />
           <span className="pointer-events-none absolute inset-0 grid place-items-center">
             <span className="grid h-10 w-10 place-items-center rounded-2xl text-ink">
               {copied ? (
