@@ -14,9 +14,9 @@ export default function App() {
 
       <main className="relative z-10 flex-1 px-6 pt-12 pb-10 sm:px-8 sm:pt-16 max-w-md mx-auto w-full flex flex-col items-center gap-8">
         <div className="relative w-full">
-          <div className="absolute -top-7 -right-1 flex flex-col items-end gap-2">
-            <LanguageSwitcher />
+          <div className="absolute -top-7 -right-1 flex flex-row items-center gap-2">
             <InstallButton />
+            <LanguageSwitcher />
           </div>
           <h1 className="font-round text-5xl sm:text-6xl font-bold tracking-tight text-center text-pink">
             {t('app.title')}
