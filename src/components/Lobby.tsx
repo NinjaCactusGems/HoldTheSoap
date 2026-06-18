@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import usePartySocket from 'partysocket/react';
-import { QRCodeSVG } from 'qrcode.react';
+import { StyledQRCode } from './StyledQRCode';
 import { generateRoomCode, normalizeRoomCode } from '../lib/roomCode';
 import { generateRandomName, generateBotName } from '../lib/names';
 import { Game, type Phase, type Reaction } from './Game';
@@ -14,11 +14,6 @@ import { useI18n } from '../i18n/I18nContext';
 const PARTY_HOST = import.meta.env.VITE_PARTY_HOST || 'localhost:1999';
 
 const PLAYER_NAME_KEY = 'holdthesoap:playerName';
-
-// 1×1 transparent GIF, fed to QRCodeSVG's imageSettings with excavate:true to
-// carve a clean white square in the QR center for the share button to sit in.
-const TRANSPARENT_PIXEL =
-  'data:image/gif;base64,R0lGODlhAQABAAAAACH5BAEKAAEALAAAAAABAAEAAAICTAEAOw==';
 
 // The hold phase runs at the fixed Normal/medium threshold (7 m/s², per the
 // CLAUDE.md presets) for everyone, all round.
@@ -593,21 +588,9 @@ function Room({
           type="button"
           onClick={share}
           aria-label={t(copied ? 'room.linkCopied' : 'room.share')}
-          className="relative rounded-xl bg-paper-raised p-3 active:scale-95 transition"
+          className="relative active:scale-95 transition"
         >
-          <QRCodeSVG
-            value={shareUrl}
-            size={140}
-            level="H"
-            bgColor="#FFFFFF"
-            fgColor="#243743"
-            imageSettings={{
-              src: TRANSPARENT_PIXEL,
-              height: 42,
-              width: 42,
-              excavate: true,
-            }}
-          />
+          <StyledQRCode value={shareUrl} size={176} />
           <span className="pointer-events-none absolute inset-0 grid place-items-center">
             <span className="grid h-10 w-10 place-items-center rounded-2xl text-ink">
               {copied ? (
@@ -624,20 +607,23 @@ function Room({
                   <path d="m5 13 4 4L19 7" />
                 </svg>
               ) : (
-                /* Common "share / forward" arrow: a flat shaft curving up and
-                   to the right into the arrowhead. */
+                /* Classic "share" glyph: three hollow nodes joined by two
+                   edges (Feather/Lucide share-2). */
                 <svg
                   viewBox="0 0 24 24"
                   fill="none"
                   stroke="currentColor"
-                  strokeWidth={2.5}
+                  strokeWidth={2.6}
                   strokeLinecap="round"
                   strokeLinejoin="round"
-                  className="h-5 w-5"
+                  className="h-7 w-7"
                   aria-hidden
                 >
-                  <path d="M4 17v-1a6 6 0 0 1 6-6h8" />
-                  <path d="m13 5 6 5-6 5" />
+                  <circle cx="18" cy="5" r="3" />
+                  <circle cx="6" cy="12" r="3" />
+                  <circle cx="18" cy="19" r="3" />
+                  <line x1="8.59" y1="13.51" x2="15.42" y2="17.49" />
+                  <line x1="15.41" y1="6.51" x2="8.59" y2="10.49" />
                 </svg>
               )}
             </span>
