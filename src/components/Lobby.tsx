@@ -683,17 +683,17 @@ function Room({
               return (
                 <li
                   key={p.id}
-                  className={`flex items-center gap-2 rounded-xl border-2 border-yellow-edge ${
+                  className={`flex items-center gap-2 rounded-xl border-2 border-pink-edge ${
                     isMe
-                      ? 'bg-ochre/25 px-3 py-2.5 text-base font-bold'
-                      : 'bg-yellow-soft px-2.5 py-2 text-sm'
+                      ? 'bg-pink/15 px-3 py-2.5 text-base font-bold'
+                      : 'bg-pink-soft px-2.5 py-2 text-sm'
                   } ${p.away ? 'opacity-50' : ''} ${
                     idx % 2 ? '-rotate-[1deg]' : 'rotate-[1deg]'
                   }`}
                 >
                   <span
                     className={`h-2.5 w-2.5 shrink-0 rounded-full ${
-                      p.away ? 'bg-ink-faint' : p.ready ? 'bg-pink' : 'bg-ink-faint'
+                      p.ready ? 'bg-go' : 'bg-ink-faint'
                     }`}
                     title={t(
                       p.away
