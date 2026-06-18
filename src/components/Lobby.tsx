@@ -668,7 +668,7 @@ function Room({
         </button>
       )}
 
-      <div className="flex flex-col gap-2">
+      <div className="relative z-20 flex flex-col gap-2">
         {players.length === 0 ? (
           <div className="text-sm text-ink-faint italic">
             {t('room.waiting')}
@@ -683,8 +683,8 @@ function Room({
               // Tint the whole pill by state, mirroring the dot: blue when ready,
               // grey otherwise (ineligible / not-ready). Own pill reads stronger.
               const tone = p.ready
-                ? { fill: isMe ? 'bg-go/25' : 'bg-go/15', edge: 'border-go-edge' }
-                : { fill: isMe ? 'bg-ink-faint/25' : 'bg-ink-faint/15', edge: 'border-ink-faint/45' };
+                ? { fill: isMe ? 'bg-go/25' : 'bg-go/15', edge: 'border-go-edge', edgeFocus: 'focus:border-go-edge' }
+                : { fill: isMe ? 'bg-ink-faint/25' : 'bg-ink-faint/15', edge: 'border-ink-faint/45', edgeFocus: 'focus:border-ink-faint/45' };
               return (
                 <li
                   key={p.id}
@@ -721,7 +721,7 @@ function Room({
                         maxLength={24}
                         onChange={(e) => setDraftName(e.target.value)}
                         onBlur={saveName}
-                        className="field min-w-0 flex-1 px-2.5 py-1 text-sm"
+                        className={`field min-w-0 flex-1 bg-paper px-2.5 py-1 text-sm ${tone.edge} ${tone.edgeFocus}`}
                       />
                       <button
                         type="submit"
