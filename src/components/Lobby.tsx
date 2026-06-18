@@ -141,7 +141,7 @@ function IdleLobby({ onEnter }: { onEnter: (code: string) => void }) {
       <button
         type="button"
         onClick={() => onEnter(generateRoomCode())}
-        className="btn btn-primary w-full"
+        className="btn btn-accent w-full -rotate-[1.5deg]"
       >
         {t('lobby.create')}
       </button>
@@ -165,7 +165,7 @@ function IdleLobby({ onEnter }: { onEnter: (code: string) => void }) {
           maxLength={8}
           className="field text-center text-lg font-mono tracking-[0.12em] uppercase placeholder:normal-case placeholder:font-medium placeholder:tracking-normal"
         />
-        <button type="submit" disabled={!canJoin} className="btn btn-primary w-full">
+        <button type="submit" disabled={!canJoin} className="btn btn-accent w-full rotate-[1.5deg]">
           {t('lobby.join')}
         </button>
       </form>
@@ -540,7 +540,7 @@ function Room({
               className="fixed inset-0 z-20"
               onClick={() => setConfirmingLeave(false)}
             />
-            <div className="surface absolute right-0 top-10 z-30 w-48 p-3 shadow-soft flex flex-col gap-2.5">
+            <div className="surface absolute right-0 top-10 z-30 w-48 bg-paper-raised p-3 shadow-soft flex flex-col gap-2.5">
               <p className="text-sm font-semibold text-ink">
                 {t('room.leaveConfirm')}
               </p>
@@ -631,7 +631,7 @@ function Room({
           type="button"
           disabled={motionUnsupported || me?.noMotion}
           onClick={() => onToggleReady(!(me?.ready ?? false))}
-          className={`btn relative z-10 w-full border-2 px-6 py-3.5 text-base text-paper shadow-soft disabled:border-line disabled:bg-line disabled:text-ink-faint disabled:shadow-none ${
+          className={`btn relative z-10 w-full border-2 px-6 py-3.5 text-base text-paper shadow-soft -rotate-[1deg] disabled:border-line disabled:bg-line disabled:text-ink-faint disabled:shadow-none ${
             me?.ready ? 'bg-go border-go-edge' : 'bg-eliminated border-eliminated-edge'
           }`}
         >
@@ -669,16 +669,13 @@ function Room({
       )}
 
       <div className="flex flex-col gap-2">
-        <div className="text-center text-xs uppercase tracking-wider text-ink-muted">
-          {t('room.players', { count: players.length })}
-        </div>
         {players.length === 0 ? (
           <div className="text-sm text-ink-faint italic">
             {t('room.waiting')}
           </div>
         ) : (
           <ul className="flex flex-col gap-1.5">
-            {players.map((p) => {
+            {players.map((p, idx) => {
               const isMe = p.id === myId;
               const isBot = p.id.startsWith('bot-');
               const team = teamById(p.team);
@@ -686,15 +683,17 @@ function Room({
               return (
                 <li
                   key={p.id}
-                  className={`flex items-center gap-2 rounded-xl px-2.5 py-2 text-sm ${
+                  className={`flex items-center gap-2 rounded-xl border-2 border-pink-edge ${
                     isMe
-                      ? 'bg-go/15 ring-1 ring-go/50'
-                      : 'bg-paper'
-                  } ${p.away ? 'opacity-50' : ''}`}
+                      ? 'bg-pink/20 px-3 py-2.5 text-base font-bold'
+                      : 'bg-pink-soft px-2.5 py-2 text-sm'
+                  } ${p.away ? 'opacity-50' : ''} ${
+                    idx % 2 ? '-rotate-[1deg]' : 'rotate-[1deg]'
+                  }`}
                 >
                   <span
-                    className={`h-2 w-2 shrink-0 rounded-full ${
-                      p.away ? 'bg-ink-faint' : p.ready ? 'bg-go' : 'bg-ink-faint'
+                    className={`h-2.5 w-2.5 shrink-0 rounded-full ${
+                      p.away ? 'bg-ink-faint' : p.ready ? 'bg-pink' : 'bg-ink-faint'
                     }`}
                     title={t(
                       p.away

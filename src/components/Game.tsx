@@ -397,12 +397,14 @@ function WinnerView({
   // the winner screen and once the lobby has slid in beneath it.
   const smileys = (
     <div className="relative z-30 flex gap-3">
-      {(Object.keys(REACTION_EMOJI) as Reaction[]).map((r) => (
+      {(Object.keys(REACTION_EMOJI) as Reaction[]).map((r, i) => (
         <button
           key={r}
           type="button"
           onClick={() => onReaction(r)}
-          className="grid h-16 w-16 place-items-center rounded-2xl border-2 border-outline bg-paper-raised text-4xl shadow-sm active:scale-95 transition"
+          className={`grid h-16 w-16 place-items-center rounded-2xl border-2 border-outline bg-paper-raised text-4xl shadow-sm active:scale-95 transition ${
+            i % 2 ? '-rotate-[3deg]' : 'rotate-[3deg]'
+          }`}
           aria-label={r}
         >
           {REACTION_EMOJI[r]}

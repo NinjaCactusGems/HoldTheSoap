@@ -28,7 +28,9 @@
   --color-olive:      #F86FB1; /* legacy token, repointed to pink (unused) */
 
   /* brand + full-screen hold-phase fields — readable across a room */
-  --color-pink:    #F06FA8; /* title text — softened rose, sits in the pastel family */
+  --color-pink:      #F06FA8; /* title text — softened rose, sits in the pastel family */
+  --color-pink-soft: #FBDCEB; /* light pink — player pill fill */
+  --color-pink-edge: #DB6FA3; /* darker pink — outline */
   --color-hold:    #F86FB1; /* in-game alive background (kept punchy on its own screen) */
   --color-dropped: #A6D8F7; /* in-game eliminated background (light blue) */
 
@@ -61,6 +63,9 @@
   }
   .btn-primary {
     @apply px-6 py-3.5 text-base border-2 border-go-edge bg-go text-paper shadow-soft disabled:border-line disabled:bg-line disabled:text-ink-faint disabled:shadow-none;
+  }
+  .btn-accent {
+    @apply px-6 py-3.5 text-base border-2 border-accent-edge bg-accent text-paper shadow-soft disabled:border-line disabled:bg-line disabled:text-ink-faint disabled:shadow-none;
   }
   .btn-secondary {
     @apply px-5 py-2.5 text-sm border-2 border-outline bg-paper text-ink;
