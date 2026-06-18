@@ -1,28 +1,34 @@
 @import "tailwindcss";
 
 @theme {
-  /* "Bubble bath" candy theme: baby-blue page, white windows, pink + blue. */
-  --color-sky:          #D9EFFB; /* baby-blue page background */
+  /* "Bubble bath" candy theme: blue page, white windows, pink + blue. Cartoony
+     flat pastels with tinted per-colour outlines (the *-edge tokens). */
+  --color-sky:          #BFE4F8; /* blue page background */
   --color-paper:        #FFFFFF; /* light text on buttons / input fields */
   --color-paper-raised: #FFFFFF; /* white "window" surfaces (panels, QR) */
   --color-ink:          #243743; /* primary text — cool dark slate */
   --color-ink-muted:    #5A7180; /* labels / secondary */
   --color-ink-faint:    #97AEBC; /* placeholders, footer, disabled */
-  --color-line:         #CFE6F2; /* cool light borders, dividers, meter track */
+  --color-line:         #CFE6F2; /* cool light fills: meter track, neutral btn, dividers */
+  --color-outline:      #A7D2EC; /* neutral cartoon outline for white/light surfaces */
   --color-accent:       #EA4FA0; /* magenta-pink — emphasis / shake button */
   --color-accent-soft:  #F26FB4; /* hover */
+  --color-accent-edge:  #C53C84; /* darker accent — outline */
   --color-flash:        #FF8FC8; /* pink shake flash */
 
-  /* status tones */
-  --color-go:    #3FAEE0; /* connected / create / ready / start (sky blue) */
-  --color-ochre: #F4B445; /* connecting (candy amber) */
+  /* status tones (+ darker -edge shades for tinted per-colour outlines) */
+  --color-go:         #34ABE4; /* connected / create / ready / start (sky blue) */
+  --color-go-edge:    #2C8CBE; /* darker blue — outline */
+  --color-ochre:      #F4B445; /* connecting (candy amber) */
+  --color-ochre-edge: #D69226; /* darker amber — outline */
 
   /* "not ready" / leave warning (coral) */
-  --color-eliminated: #FF7C9C;
+  --color-eliminated:      #FF7C9C;
+  --color-eliminated-edge: #E85F80; /* darker coral — outline */
   --color-olive:      #F86FB1; /* legacy token, repointed to pink (unused) */
 
   /* brand + full-screen hold-phase fields — readable across a room */
-  --color-pink:    #EE7CAE; /* title text — softened rose, sits in the pastel family */
+  --color-pink:    #F06FA8; /* title text — softened rose, sits in the pastel family */
   --color-hold:    #F86FB1; /* in-game alive background (kept punchy on its own screen) */
   --color-dropped: #A6D8F7; /* in-game eliminated background (light blue) */
 
@@ -54,27 +60,27 @@
     @apply rounded-full font-semibold transition active:scale-95 disabled:cursor-not-allowed;
   }
   .btn-primary {
-    @apply px-6 py-3.5 text-base bg-go text-paper shadow-soft disabled:bg-line disabled:text-ink-faint disabled:shadow-none;
+    @apply px-6 py-3.5 text-base border-2 border-go-edge bg-go text-paper shadow-soft disabled:border-line disabled:bg-line disabled:text-ink-faint disabled:shadow-none;
   }
   .btn-secondary {
-    @apply px-5 py-2.5 text-sm border border-line bg-paper text-ink;
+    @apply px-5 py-2.5 text-sm border-2 border-outline bg-paper text-ink;
   }
   .btn-neutral {
-    @apply px-5 py-2.5 text-sm bg-line text-ink;
+    @apply px-5 py-2.5 text-sm border-2 border-outline bg-line text-ink;
   }
   .btn-ghost {
-    @apply shrink-0 rounded-lg border border-line px-2.5 py-1 text-xs font-medium text-ink-muted transition active:scale-95;
+    @apply shrink-0 rounded-lg border-2 border-outline px-2.5 py-1 text-xs font-medium text-ink-muted transition active:scale-95;
   }
 
   /* Form fields — a faint sky fill makes them legible against white cards, and
      every field shares one focus treatment. */
   .field {
-    @apply w-full rounded-xl border border-line bg-sky/50 px-4 py-3 text-ink placeholder:text-ink-faint focus:outline-none focus:border-go focus:ring-2 focus:ring-go/20;
+    @apply w-full rounded-xl border-2 border-outline bg-sky/50 px-4 py-3 text-ink placeholder:text-ink-faint focus:outline-none focus:border-go focus:ring-2 focus:ring-go/20;
   }
 
   /* Raised white "window" surfaces (lobby panel, how-to-play, menus). */
   .surface {
-    @apply rounded-2xl border border-line bg-paper-raised/80;
+    @apply rounded-2xl border-2 border-outline bg-paper-raised/80;
   }
 }
 

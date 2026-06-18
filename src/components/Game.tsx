@@ -40,7 +40,7 @@ function CoffeeLink() {
       href={COFFEE_URL}
       target="_blank"
       rel="noopener noreferrer"
-      className="relative z-10 mt-4 flex max-w-[92vw] items-center gap-3 rounded-full border border-line bg-paper/70 py-2 pl-2 pr-5 text-xs font-semibold text-ink-muted active:scale-95 transition"
+      className="relative z-10 mt-4 flex max-w-[92vw] items-center gap-3 rounded-full border-2 border-outline bg-paper/70 py-2 pl-2 pr-5 text-xs font-semibold text-ink-muted active:scale-95 transition"
     >
       <span className="grid h-11 w-11 shrink-0 place-items-center rounded-full bg-ochre/15 text-ochre">
         <svg
@@ -402,7 +402,7 @@ function WinnerView({
           key={r}
           type="button"
           onClick={() => onReaction(r)}
-          className="grid h-16 w-16 place-items-center rounded-2xl border border-line bg-paper-raised text-4xl shadow-sm active:scale-95 transition"
+          className="grid h-16 w-16 place-items-center rounded-2xl border-2 border-outline bg-paper-raised text-4xl shadow-sm active:scale-95 transition"
           aria-label={r}
         >
           {REACTION_EMOJI[r]}

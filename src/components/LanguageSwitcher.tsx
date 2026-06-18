@@ -43,7 +43,7 @@ export function LanguageSwitcher() {
         aria-expanded={open}
         aria-label={t('app.language')}
         onClick={() => setOpen((o) => !o)}
-        className={`flex h-8 w-8 items-center justify-center rounded-full border border-line transition ${
+        className={`flex h-8 w-8 items-center justify-center rounded-full border-2 border-outline transition ${
           open ? 'bg-ink text-paper' : 'bg-paper-raised/80 text-ink-muted'
         }`}
       >

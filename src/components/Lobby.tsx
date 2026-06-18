@@ -146,12 +146,6 @@ function IdleLobby({ onEnter }: { onEnter: (code: string) => void }) {
         {t('lobby.create')}
       </button>
 
-      <div className="my-1 flex items-center gap-2 text-xs text-ink-faint">
-        <div className="h-px flex-1 bg-line" />
-        <span>{t('lobby.or')}</span>
-        <div className="h-px flex-1 bg-line" />
-      </div>
-
       <form
         className="flex flex-col gap-3"
         onSubmit={(e) => {
@@ -557,7 +551,7 @@ function Room({
                     setConfirmingLeave(false);
                     onLeave();
                   }}
-                  className="btn flex-1 bg-eliminated px-3 py-2 text-sm text-paper"
+                  className="btn flex-1 border-2 border-eliminated-edge bg-eliminated px-3 py-2 text-sm text-paper"
                 >
                   {t('room.leave')}
                 </button>
@@ -637,8 +631,8 @@ function Room({
           type="button"
           disabled={motionUnsupported || me?.noMotion}
           onClick={() => onToggleReady(!(me?.ready ?? false))}
-          className={`btn relative z-10 w-full px-6 py-3.5 text-base text-paper shadow-soft disabled:bg-line disabled:text-ink-faint disabled:shadow-none ${
-            me?.ready ? 'bg-go' : 'bg-eliminated'
+          className={`btn relative z-10 w-full border-2 px-6 py-3.5 text-base text-paper shadow-soft disabled:border-line disabled:bg-line disabled:text-ink-faint disabled:shadow-none ${
+            me?.ready ? 'bg-go border-go-edge' : 'bg-eliminated border-eliminated-edge'
           }`}
         >
           {t(me?.ready ? 'room.readyDone' : 'room.readyPrompt')}
@@ -729,7 +723,7 @@ function Room({
                       />
                       <button
                         type="submit"
-                        className="btn-ghost border-go bg-go text-paper"
+                        className="btn-ghost border-go-edge bg-go text-paper"
                       >
                         {t('room.save')}
                       </button>
