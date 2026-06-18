@@ -26,7 +26,7 @@ export function HowToPlay() {
         aria-haspopup="dialog"
         aria-expanded={open}
         onClick={() => setOpen(true)}
-        className="surface flex h-full w-full items-center justify-center gap-2 px-3 py-3 active:scale-95 transition"
+        className="surface flex h-full w-full items-center justify-center gap-2 px-3 py-3 shadow-soft -rotate-[4deg] active:scale-95 transition"
       >
         <span
           aria-hidden="true"
