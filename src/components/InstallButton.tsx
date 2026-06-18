@@ -81,13 +81,13 @@ export function InstallButton() {
   };
 
   return (
-    <div ref={rootRef} className="relative flex-1">
+    <div ref={rootRef} className="relative z-10 -ml-4 flex-1">
       <button
         type="button"
         onClick={onClick}
         aria-haspopup={isIos && !alreadyInstalled ? 'dialog' : undefined}
         aria-expanded={isIos && !alreadyInstalled ? showIosHelp : undefined}
-        className="surface relative flex h-full w-full items-center justify-center gap-2 overflow-visible px-3 py-3 text-center active:scale-95 transition"
+        className="surface relative flex h-full w-full items-center justify-center gap-2 overflow-visible px-3 py-3 text-center shadow-soft rotate-[4deg] active:scale-95 transition"
       >
         <svg
           viewBox="0 0 24 24"

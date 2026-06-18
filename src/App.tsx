@@ -22,7 +22,7 @@ export default function App() {
           </h1>
         </div>
 
-        <div className="flex w-full max-w-sm items-stretch gap-2">
+        <div className="flex w-full max-w-sm items-stretch">
           <HowToPlay />
           <InstallButton />
         </div>
