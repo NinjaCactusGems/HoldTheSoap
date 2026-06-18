@@ -141,7 +141,7 @@ function IdleLobby({ onEnter }: { onEnter: (code: string) => void }) {
       <button
         type="button"
         onClick={() => onEnter(generateRoomCode())}
-        className="btn btn-primary w-full -rotate-[1.5deg]"
+        className="btn btn-coral w-full -rotate-[1.5deg]"
       >
         {t('lobby.create')}
       </button>
@@ -165,7 +165,7 @@ function IdleLobby({ onEnter }: { onEnter: (code: string) => void }) {
           maxLength={8}
           className="field text-center text-lg font-mono tracking-[0.12em] uppercase placeholder:normal-case placeholder:font-medium placeholder:tracking-normal"
         />
-        <button type="submit" disabled={!canJoin} className="btn btn-primary w-full rotate-[1.5deg]">
+        <button type="submit" disabled={!canJoin} className="btn btn-coral w-full rotate-[1.5deg]">
           {t('lobby.join')}
         </button>
       </form>

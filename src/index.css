@@ -64,6 +64,10 @@
   .btn-primary {
     @apply px-6 py-3.5 text-base border-2 border-go-edge bg-go text-paper shadow-soft disabled:border-line disabled:bg-line disabled:text-ink-faint disabled:shadow-none;
   }
+  /* Coral-pink CTA — matches the ready button in its "not ready" state. */
+  .btn-coral {
+    @apply px-6 py-3.5 text-base border-2 border-eliminated-edge bg-eliminated text-paper shadow-soft disabled:border-line disabled:bg-line disabled:text-ink-faint disabled:shadow-none;
+  }
   .btn-secondary {
     @apply px-5 py-2.5 text-sm border-2 border-outline bg-paper text-ink;
   }
