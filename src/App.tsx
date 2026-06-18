@@ -1,3 +1,4 @@
+import { useLayoutEffect, useRef } from 'react';
 import { Lobby } from './components/Lobby';
 import { HowToPlay } from './components/HowToPlay';
 import { Bubbles } from './components/Bubbles';
@@ -6,17 +7,43 @@ import { InstallButton } from './components/InstallButton';
 import { useFlatTilt } from './hooks/useFlatTilt';
 import { useI18n } from './i18n/I18nContext';
 
+// Small per-word tilts for a hand-lettered, cartoony title.
+const WORD_TILT = [-4, 3, -3, 4, -2];
+
 export default function App() {
   const { t } = useI18n();
   const titleRef = useFlatTilt<HTMLHeadingElement>();
+  const tailRef = useRef<HTMLSpanElement>(null);
 
   // Force the title onto two lines regardless of locale: all but the last word
-  // on the first line, the last word on the second (every locale's title is
-  // three words, so this reads e.g. "HOLD THE" / "SOAP").
+  // on the first line, the last (enlarged) word on the second — every locale's
+  // title is three words, so this reads e.g. "HOLD THE" / "SOAP".
   const titleWords = t('app.title').split(' ');
-  const titleHead =
-    titleWords.length > 1 ? titleWords.slice(0, -1).join(' ') : t('app.title');
-  const titleTail = titleWords.length > 1 ? titleWords[titleWords.length - 1] : '';
+  const headWords = titleWords.length > 1 ? titleWords.slice(0, -1) : [];
+  const tailWord = titleWords[titleWords.length - 1] ?? '';
+
+  // The last word is deliberately large, but long localized words (e.g. the
+  // Portuguese "SABONETE") would overflow — so shrink it to fit the title width
+  // when needed. Short words (e.g. "SOAP") keep the full size. Re-fits on locale
+  // change, resize, and once the web font has loaded (its metrics shift width).
+  useLayoutEffect(() => {
+    const el = tailRef.current;
+    if (!el) return;
+    el.style.transform = `rotate(${WORD_TILT[headWords.length % WORD_TILT.length]}deg)`;
+    const fit = () => {
+      const parent = el.parentElement;
+      if (!parent) return;
+      el.style.fontSize = '';
+      const max = parseFloat(getComputedStyle(el).fontSize);
+      const avail = parent.clientWidth;
+      const w = el.offsetWidth;
+      if (w > 0 && w > avail) el.style.fontSize = `${(max * (avail / w) * 0.96).toFixed(2)}px`;
+    };
+    fit();
+    window.addEventListener('resize', fit);
+    document.fonts?.ready.then(fit).catch(() => {});
+    return () => window.removeEventListener('resize', fit);
+  }, [tailWord, headWords.length]);
 
   return (
     <div className="relative min-h-dvh overflow-x-hidden bg-sky text-ink flex flex-col">
@@ -36,8 +63,26 @@ export default function App() {
               filter: 'drop-shadow(0 8px 6px rgb(36 55 67 / 0.28))',
             }}
           >
-            <span className="block">{titleHead}</span>
-            {titleTail && <span className="block text-[1.45em]">{titleTail}</span>}
+            {headWords.length > 0 && (
+              <span className="block">
+                {headWords.map((w, i) => (
+                  <span key={i}>
+                    {i > 0 ? ' ' : ''}
+                    <span
+                      className="inline-block"
+                      style={{ transform: `rotate(${WORD_TILT[i % WORD_TILT.length]}deg)` }}
+                    >
+                      {w}
+                    </span>
+                  </span>
+                ))}
+              </span>
+            )}
+            <span className="block">
+              <span ref={tailRef} className="inline-block text-[1.6em]">
+                {tailWord}
+              </span>
+            </span>
           </h1>
         </div>
 
