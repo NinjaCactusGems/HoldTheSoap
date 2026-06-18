@@ -613,10 +613,10 @@ function Room({
                   viewBox="0 0 24 24"
                   fill="none"
                   stroke="currentColor"
-                  strokeWidth={2}
+                  strokeWidth={2.6}
                   strokeLinecap="round"
                   strokeLinejoin="round"
-                  className="h-5 w-5"
+                  className="h-7 w-7"
                   aria-hidden
                 >
                   <circle cx="18" cy="5" r="3" />
