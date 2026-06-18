@@ -9,8 +9,13 @@ import { useEffect, useRef } from 'react';
 
 const MIN_SIZE = 6; // radius
 const MAX_SIZE = 26;
-const MIN_OPACITY = 0.18;
-const MAX_OPACITY = 0.5;
+const MIN_OPACITY = 0.3;
+const MAX_OPACITY = 0.75;
+
+// Fill variance: mostly white, some pale blue, so the field reads as soap suds
+// with a light-blue/white mix against the blue background.
+const FILL_WHITE = '#FFFFFF';
+const FILL_BLUE = '#EAF6FF';
 const MIN_VY = 0.2; // upward speed (positive magnitude; applied as -vy)
 const MAX_VY = 0.7;
 const WOBBLE = 0.25; // gentle horizontal sway amplitude
@@ -32,6 +37,7 @@ type Bubble = {
   vx: number;
   vy: number;
   opacity: number;
+  fill: string; // white or pale blue, for light-blue/white variance
 };
 
 function rand(min: number, max: number): number {
@@ -56,6 +62,7 @@ function makeBubble(width: number, height: number, atBottom: boolean): Bubble {
     vx: 0,
     vy: baseVy,
     opacity: rand(MIN_OPACITY, MAX_OPACITY),
+    fill: Math.random() < 0.35 ? FILL_BLUE : FILL_WHITE,
   };
 }
 
@@ -103,10 +110,10 @@ export function Bubbles() {
         // highlight, so each circle reads as a soap bubble.
         ctx!.beginPath();
         ctx!.arc(b.x, b.y, b.size, 0, Math.PI * 2);
-        ctx!.fillStyle = '#FFFFFF';
+        ctx!.fillStyle = b.fill;
         ctx!.fill();
-        ctx!.lineWidth = 1;
-        ctx!.strokeStyle = 'rgba(255, 255, 255, 0.85)';
+        ctx!.lineWidth = 1.6;
+        ctx!.strokeStyle = 'rgba(255, 255, 255, 0.9)';
         ctx!.stroke();
         ctx!.beginPath();
         ctx!.arc(b.x - b.size * 0.3, b.y - b.size * 0.3, Math.max(1, b.size * 0.18), 0, Math.PI * 2);

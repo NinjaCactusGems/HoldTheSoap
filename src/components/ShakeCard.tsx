@@ -51,7 +51,7 @@ function IdleView({
         type="button"
         onClick={start}
         disabled={blocked}
-        className="w-full rounded-full bg-accent px-8 py-4 text-lg font-semibold text-paper shadow-lg shadow-accent/25 hover:bg-accent-soft active:scale-95 transition disabled:bg-line disabled:text-ink-faint disabled:shadow-none"
+        className="w-full rounded-full border-2 border-accent-edge bg-accent px-8 py-4 text-lg font-semibold text-paper shadow-lg shadow-accent/25 hover:bg-accent-soft active:scale-95 transition disabled:border-line disabled:bg-line disabled:text-ink-faint disabled:shadow-none"
       >
         Start
       </button>

@@ -141,16 +141,10 @@ function IdleLobby({ onEnter }: { onEnter: (code: string) => void }) {
       <button
         type="button"
         onClick={() => onEnter(generateRoomCode())}
-        className="btn btn-primary w-full"
+        className="btn btn-coral w-full -rotate-[1.5deg]"
       >
         {t('lobby.create')}
       </button>
-
-      <div className="my-1 flex items-center gap-2 text-xs text-ink-faint">
-        <div className="h-px flex-1 bg-line" />
-        <span>{t('lobby.or')}</span>
-        <div className="h-px flex-1 bg-line" />
-      </div>
 
       <form
         className="flex flex-col gap-3"
@@ -171,7 +165,7 @@ function IdleLobby({ onEnter }: { onEnter: (code: string) => void }) {
           maxLength={8}
           className="field text-center text-lg font-mono tracking-[0.12em] uppercase placeholder:normal-case placeholder:font-medium placeholder:tracking-normal"
         />
-        <button type="submit" disabled={!canJoin} className="btn btn-primary w-full">
+        <button type="submit" disabled={!canJoin} className="btn btn-coral w-full rotate-[1.5deg]">
           {t('lobby.join')}
         </button>
       </form>
@@ -546,7 +540,7 @@ function Room({
               className="fixed inset-0 z-20"
               onClick={() => setConfirmingLeave(false)}
             />
-            <div className="surface absolute right-0 top-10 z-30 w-48 p-3 shadow-soft flex flex-col gap-2.5">
+            <div className="surface absolute right-0 top-10 z-30 w-48 bg-paper-raised p-3 shadow-soft flex flex-col gap-2.5">
               <p className="text-sm font-semibold text-ink">
                 {t('room.leaveConfirm')}
               </p>
@@ -557,7 +551,7 @@ function Room({
                     setConfirmingLeave(false);
                     onLeave();
                   }}
-                  className="btn flex-1 bg-eliminated px-3 py-2 text-sm text-paper"
+                  className="btn flex-1 border-2 border-eliminated-edge bg-eliminated px-3 py-2 text-sm text-paper"
                 >
                   {t('room.leave')}
                 </button>
@@ -637,8 +631,8 @@ function Room({
           type="button"
           disabled={motionUnsupported || me?.noMotion}
           onClick={() => onToggleReady(!(me?.ready ?? false))}
-          className={`btn relative z-10 w-full px-6 py-3.5 text-base text-paper shadow-soft disabled:bg-line disabled:text-ink-faint disabled:shadow-none ${
-            me?.ready ? 'bg-go' : 'bg-eliminated'
+          className={`btn relative z-10 w-full border-2 px-6 py-3.5 text-base text-paper shadow-soft -rotate-[1deg] disabled:border-line disabled:bg-line disabled:text-ink-faint disabled:shadow-none ${
+            me?.ready ? 'bg-go border-go-edge' : 'bg-eliminated border-eliminated-edge'
           }`}
         >
           {t(me?.ready ? 'room.readyDone' : 'room.readyPrompt')}
@@ -674,33 +668,35 @@ function Room({
         </button>
       )}
 
-      <div className="flex flex-col gap-2">
-        <div className="text-center text-xs uppercase tracking-wider text-ink-muted">
-          {t('room.players', { count: players.length })}
-        </div>
+      <div className="relative z-20 flex flex-col gap-2">
         {players.length === 0 ? (
           <div className="text-sm text-ink-faint italic">
             {t('room.waiting')}
           </div>
         ) : (
           <ul className="flex flex-col gap-1.5">
-            {players.map((p) => {
+            {players.map((p, idx) => {
               const isMe = p.id === myId;
               const isBot = p.id.startsWith('bot-');
               const team = teamById(p.team);
               const teamsUnlocked = players.length >= MIN_PLAYERS_FOR_TEAMS;
+              // Tint the whole pill by state, mirroring the dot: blue when ready,
+              // grey otherwise (ineligible / not-ready). Own pill reads stronger.
+              const tone = p.ready
+                ? { fill: isMe ? 'bg-go/25' : 'bg-go/15', edge: 'border-go-edge', edgeFocus: 'focus:border-go-edge' }
+                : { fill: isMe ? 'bg-ink-faint/25' : 'bg-ink-faint/15', edge: 'border-ink-faint/45', edgeFocus: 'focus:border-ink-faint/45' };
               return (
                 <li
                   key={p.id}
-                  className={`flex items-center gap-2 rounded-xl px-2.5 py-2 text-sm ${
-                    isMe
-                      ? 'bg-go/15 ring-1 ring-go/50'
-                      : 'bg-paper'
-                  } ${p.away ? 'opacity-50' : ''}`}
+                  className={`flex items-center gap-2 rounded-xl border-2 ${tone.edge} ${tone.fill} ${
+                    isMe ? 'px-3 py-2.5 text-base font-bold' : 'px-2.5 py-2 text-sm'
+                  } ${p.away ? 'opacity-50' : ''} ${
+                    idx % 2 ? '-rotate-[1deg]' : 'rotate-[1deg]'
+                  }`}
                 >
                   <span
-                    className={`h-2 w-2 shrink-0 rounded-full ${
-                      p.away ? 'bg-ink-faint' : p.ready ? 'bg-go' : 'bg-ink-faint'
+                    className={`h-2.5 w-2.5 shrink-0 rounded-full ${
+                      p.ready ? 'bg-go' : 'bg-ink-faint'
                     }`}
                     title={t(
                       p.away
@@ -725,11 +721,11 @@ function Room({
                         maxLength={24}
                         onChange={(e) => setDraftName(e.target.value)}
                         onBlur={saveName}
-                        className="field min-w-0 flex-1 px-2.5 py-1 text-sm"
+                        className={`field min-w-0 flex-1 bg-paper px-2.5 py-1 text-sm ${tone.edge} ${tone.edgeFocus}`}
                       />
                       <button
                         type="submit"
-                        className="btn-ghost border-go bg-go text-paper"
+                        className="btn-ghost border-go-edge bg-go text-paper"
                       >
                         {t('room.save')}
                       </button>
