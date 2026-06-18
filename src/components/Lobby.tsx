@@ -141,7 +141,7 @@ function IdleLobby({ onEnter }: { onEnter: (code: string) => void }) {
       <button
         type="button"
         onClick={() => onEnter(generateRoomCode())}
-        className="btn btn-accent w-full -rotate-[1.5deg]"
+        className="btn btn-primary w-full -rotate-[1.5deg]"
       >
         {t('lobby.create')}
       </button>
@@ -165,7 +165,7 @@ function IdleLobby({ onEnter }: { onEnter: (code: string) => void }) {
           maxLength={8}
           className="field text-center text-lg font-mono tracking-[0.12em] uppercase placeholder:normal-case placeholder:font-medium placeholder:tracking-normal"
         />
-        <button type="submit" disabled={!canJoin} className="btn btn-accent w-full rotate-[1.5deg]">
+        <button type="submit" disabled={!canJoin} className="btn btn-primary w-full rotate-[1.5deg]">
           {t('lobby.join')}
         </button>
       </form>
@@ -683,10 +683,10 @@ function Room({
               return (
                 <li
                   key={p.id}
-                  className={`flex items-center gap-2 rounded-xl border-2 border-pink-edge ${
+                  className={`flex items-center gap-2 rounded-xl border-2 border-yellow-edge ${
                     isMe
-                      ? 'bg-pink/20 px-3 py-2.5 text-base font-bold'
-                      : 'bg-pink-soft px-2.5 py-2 text-sm'
+                      ? 'bg-ochre/25 px-3 py-2.5 text-base font-bold'
+                      : 'bg-yellow-soft px-2.5 py-2 text-sm'
                   } ${p.away ? 'opacity-50' : ''} ${
                     idx % 2 ? '-rotate-[1deg]' : 'rotate-[1deg]'
                   }`}
