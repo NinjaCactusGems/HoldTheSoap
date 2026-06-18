@@ -19,7 +19,7 @@ export default function App() {
   const titleTail = titleWords.length > 1 ? titleWords[titleWords.length - 1] : '';
 
   return (
-    <div className="relative min-h-dvh bg-sky text-ink flex flex-col">
+    <div className="relative min-h-dvh overflow-x-hidden bg-sky text-ink flex flex-col">
       <Bubbles />
 
       <main className="relative z-10 flex-1 px-6 pt-12 pb-10 sm:px-8 sm:pt-16 max-w-md mx-auto w-full flex flex-col items-center gap-8">
@@ -29,7 +29,7 @@ export default function App() {
           </div>
           <h1
             ref={titleRef}
-            className="font-round text-[18vw] leading-[0.8] tracking-[-0.06em] sm:text-7xl font-bold text-center text-pink will-change-transform text-balance"
+            className="font-round text-[15vw] leading-[0.8] tracking-[-0.01em] sm:text-6xl font-bold text-center text-pink will-change-transform"
             style={{
               WebkitTextStroke: '0.05em var(--color-ink)',
               paintOrder: 'stroke fill',
@@ -37,7 +37,7 @@ export default function App() {
             }}
           >
             <span className="block">{titleHead}</span>
-            {titleTail && <span className="block">{titleTail}</span>}
+            {titleTail && <span className="block text-[1.45em]">{titleTail}</span>}
           </h1>
         </div>
 
