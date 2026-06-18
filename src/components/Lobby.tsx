@@ -680,13 +680,16 @@ function Room({
               const isBot = p.id.startsWith('bot-');
               const team = teamById(p.team);
               const teamsUnlocked = players.length >= MIN_PLAYERS_FOR_TEAMS;
+              // Tint the whole pill by state, mirroring the dot: blue when ready,
+              // grey otherwise (ineligible / not-ready). Own pill reads stronger.
+              const tone = p.ready
+                ? { fill: isMe ? 'bg-go/25' : 'bg-go/15', edge: 'border-go-edge' }
+                : { fill: isMe ? 'bg-ink-faint/25' : 'bg-ink-faint/15', edge: 'border-ink-faint/45' };
               return (
                 <li
                   key={p.id}
-                  className={`flex items-center gap-2 rounded-xl border-2 border-pink-edge ${
-                    isMe
-                      ? 'bg-pink/15 px-3 py-2.5 text-base font-bold'
-                      : 'bg-pink-soft px-2.5 py-2 text-sm'
+                  className={`flex items-center gap-2 rounded-xl border-2 ${tone.edge} ${tone.fill} ${
+                    isMe ? 'px-3 py-2.5 text-base font-bold' : 'px-2.5 py-2 text-sm'
                   } ${p.away ? 'opacity-50' : ''} ${
                     idx % 2 ? '-rotate-[1deg]' : 'rotate-[1deg]'
                   }`}
