@@ -15,10 +15,9 @@ const PARTY_HOST = import.meta.env.VITE_PARTY_HOST || 'localhost:1999';
 
 const PLAYER_NAME_KEY = 'holdthesoap:playerName';
 
-// The hold phase runs at a fixed threshold for everyone, all round. Set to
-// 3.5 m/s² — twice as sensitive as the Normal/medium preset (7 m/s²), so it
-// triggers on half the motion.
-const HOLD_THRESHOLD = 3.5;
+// The hold phase runs at the fixed Normal/medium threshold (7 m/s², per the
+// CLAUDE.md presets) for everyone, all round.
+const HOLD_THRESHOLD = 7;
 
 // NAT/proxy keepalive cadence. The literal 'k' frame is answered by the
 // Cloudflare runtime itself (setWebSocketAutoResponse) without waking the
