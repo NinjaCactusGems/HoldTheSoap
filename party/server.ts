@@ -152,7 +152,7 @@ type ClientMessage =
   | { type: 'removeBot'; id: string }
   | { type: 'ping'; t: number };
 
-const MAX_PLAYERS_PER_ROOM = 32;
+const MAX_PLAYERS_PER_ROOM = 50;
 const MAX_NAME_LENGTH = 24;
 const READY_DURATION_MS = 5000;
 const WINNER_DURATION_MS = 10000;
